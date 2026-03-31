@@ -2,7 +2,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 COPY RealEstateCRM/. .
-RUN dotnet publish -c Release -o /app --no-restore
+RUN dotnet restore
+RUN dotnet publish -c Release -o /app
 
 # Use the official ASP.NET runtime image for the final stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
