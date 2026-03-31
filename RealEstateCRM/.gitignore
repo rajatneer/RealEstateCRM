@@ -1,0 +1,19 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.db
+*.db-shm
+*.db-wal
+
+## Logs
+Logs/
+
+## VS Code
+.vscode/
+
+## IDE
+.vs/
+*.sln.docstates
