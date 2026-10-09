@@ -1,0 +1,21 @@
+# Render Blueprint: one free web service running the Dockerfile (API + frontend together).
+services:
+  - type: web
+    name: realestate-crm
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: Jwt__Key
+        generateValue: true          # Render creates a long random secret
+      - key: DATABASE_URL
+        sync: false                  # paste your Neon/Supabase Postgres connection string
+      - key: Bootstrap__CompanyCode
+        sync: false
+      - key: Bootstrap__CompanyName
+        sync: false
+      - key: Bootstrap__AdminUsername
+        sync: false
+      - key: Bootstrap__AdminPassword
+        sync: false                  # at least 10 characters
