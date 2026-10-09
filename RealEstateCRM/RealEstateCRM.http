@@ -1,6 +1,0 @@
-@RealEstateCRM_HostAddress = http://localhost:5133
-
-GET {{RealEstateCRM_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

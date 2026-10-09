@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -26,7 +27,7 @@ namespace RealEstateCRM.Controllers
                 var tasks = await _taskService.GetAllAsync(status);
                 return Ok(tasks);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll tasks");
                 return StatusCode(500, "An error occurred while retrieving tasks.");
@@ -41,7 +42,7 @@ namespace RealEstateCRM.Controllers
                 var tasks = await _taskService.GetOverdueAsync();
                 return Ok(tasks);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving overdue tasks");
                 return StatusCode(500, "An error occurred while retrieving overdue tasks.");
@@ -57,7 +58,7 @@ namespace RealEstateCRM.Controllers
                 if (task == null) return NotFound();
                 return Ok(task);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById task {TaskId}", id);
                 return StatusCode(500, "An error occurred while retrieving the task.");
@@ -74,7 +75,7 @@ namespace RealEstateCRM.Controllers
                 var task = await _taskService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating task");
                 return StatusCode(500, "An error occurred while creating the task.");
@@ -92,7 +93,7 @@ namespace RealEstateCRM.Controllers
                 if (task == null) return NotFound();
                 return Ok(task);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating task {TaskId}", id);
                 return StatusCode(500, "An error occurred while updating the task.");
@@ -108,7 +109,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting task {TaskId}", id);
                 return StatusCode(500, "An error occurred while deleting the task.");

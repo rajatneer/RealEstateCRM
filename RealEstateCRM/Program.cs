@@ -1,22 +1,104 @@
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
+using RealEstateCRM.Security;
 using RealEstateCRM.Services;
-
+using RealEstateCRM.Tenancy;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// For Render.com: listen on the port specified by the PORT environment variable
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5133";
-builder.WebHost.UseUrls($"http://*:{port}");
+// Hosting platforms such as Render provide the port through PORT.
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-// Log4net
 builder.Logging.AddLog4Net("log4net.config");
 
-// Database
+// ── Database (SQLite for local dev, PostgreSQL via DATABASE_URL / Database:Provider) ──
+var (dbProvider, dbConnectionString) = DatabaseConfig.Resolve(builder.Configuration);
 builder.Services.AddDbContext<CrmDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (DatabaseConfig.IsPostgres(dbProvider))
+        options.UseNpgsql(dbConnectionString);
+    else
+        options.UseSqlite(dbConnectionString);
+});
 
-// Services
+// ── Authentication / authorization (JWT bearer) ──
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.Section));
+var jwt = builder.Configuration.GetSection(JwtSettings.Section).Get<JwtSettings>() ?? new JwtSettings();
+if (string.IsNullOrWhiteSpace(jwt.Key) && builder.Environment.IsDevelopment())
+{
+    // Development-only fallback so `dotnet run` works out of the box. Never used in other environments.
+    jwt.Key = "dev-only-signing-key-change-me-0123456789";
+    builder.Services.PostConfigure<JwtSettings>(o => o.Key = jwt.Key);
+}
+if (jwt.Key.Length < 32)
+    throw new InvalidOperationException("Jwt:Key is missing or shorter than 32 characters. Set the Jwt__Key environment variable.");
+
+builder.Services
+    .AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwt.Audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = "name",
+            RoleClaimType = "role"
+        };
+    });
+
+// Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous].
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+});
+
+// ── Rate limiting (login brute-force protection) ──
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
+// Behind Render's proxy: trust X-Forwarded-* so client IPs (rate limiting) and scheme are correct.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// ── Errors ──
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// ── Application services ──
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantProvider, HttpTenantProvider>();
+builder.Services.AddScoped<IPagingContext, HttpPagingContext>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
+
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IPropertyService, PropertyService>();
 builder.Services.AddScoped<IInteractionService, InteractionService>();
@@ -37,43 +119,36 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Auto-migrate database on startup and seed test credentials
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<CrmDbContext>();
-    db.Database.Migrate();
+await DbInitializer.InitializeAsync(app.Services, app.Configuration, app.Environment);
 
-    // Seed test company and user if not present
-    var testCompany = db.Companies.FirstOrDefault(c => c.Code == "Test");
-    if (testCompany == null)
-    {
-        testCompany = new RealEstateCRM.Models.Company { Code = "Test", Name = "Test Company" };
-        db.Companies.Add(testCompany);
-        db.SaveChanges();
-    }
-    var testUser = db.Users.FirstOrDefault(u => u.CompanyId == testCompany.Id && u.Username == "Test");
-    if (testUser == null)
-    {
-        var hash = RealEstateCRM.Controllers.AuthController.HashPassword("Test123");
-        db.Users.Add(new RealEstateCRM.Models.User
-        {
-            CompanyId = testCompany.Id,
-            Username = "Test",
-            PasswordHash = hash,
-            IsActive = true
-        });
-        db.SaveChanges();
-    }
-}
+app.UseForwardedHeaders();
+app.UseExceptionHandler();
+
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "DENY";
+    headers["Referrer-Policy"] = "no-referrer";
+    await next();
+});
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 app.MapControllers();
 
 app.Run();
+
+// Required so integration tests can use WebApplicationFactory<Program>.
+public partial class Program { }

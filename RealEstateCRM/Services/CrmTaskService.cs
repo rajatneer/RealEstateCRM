@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -19,11 +20,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<CrmTaskService> _logger;
+        private readonly IPagingContext _paging;
 
-        public CrmTaskService(CrmDbContext context, ILogger<CrmTaskService> logger)
+        public CrmTaskService(CrmDbContext context, ILogger<CrmTaskService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<CrmTask>> GetAllAsync(CrmTaskStatus? status = null)
@@ -41,7 +44,7 @@ namespace RealEstateCRM.Services
 
                 return await query
                     .OrderBy(t => t.DueDate)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -69,6 +72,9 @@ namespace RealEstateCRM.Services
 
         public async Task<CrmTask> CreateAsync(CrmTaskCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
+            await _context.EnsureExistsAsync<Lead>(dto.LeadId, "Lead");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -102,10 +108,13 @@ namespace RealEstateCRM.Services
 
         public async Task<CrmTask?> UpdateAsync(int id, CrmTaskUpdateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
+            await _context.EnsureExistsAsync<Lead>(dto.LeadId, "Lead");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var task = await _context.CrmTasks.FindAsync(id);
+                var task = await _context.CrmTasks.FirstOrDefaultAsync(e => e.Id == id);
                 if (task == null) return null;
 
                 task.Title = dto.Title;
@@ -136,7 +145,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var task = await _context.CrmTasks.FindAsync(id);
+                var task = await _context.CrmTasks.FirstOrDefaultAsync(e => e.Id == id);
                 if (task == null) return false;
 
                 _context.CrmTasks.Remove(task);
@@ -163,7 +172,7 @@ namespace RealEstateCRM.Services
                     .Include(t => t.Property)
                     .Where(t => t.DueDate < DateTime.UtcNow && t.Status != CrmTaskStatus.Completed && t.Status != CrmTaskStatus.Cancelled)
                     .OrderBy(t => t.DueDate)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {

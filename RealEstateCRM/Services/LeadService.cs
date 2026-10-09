@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -21,11 +22,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<LeadService> _logger;
+        private readonly IPagingContext _paging;
 
-        public LeadService(CrmDbContext context, ILogger<LeadService> logger)
+        public LeadService(CrmDbContext context, ILogger<LeadService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<Lead>> GetAllAsync(LeadStage? stage = null)
@@ -42,7 +45,7 @@ namespace RealEstateCRM.Services
 
                 return await query
                     .OrderByDescending(l => l.UpdatedAt)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -69,6 +72,8 @@ namespace RealEstateCRM.Services
 
         public async Task<Lead> CreateAsync(LeadCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -101,10 +106,12 @@ namespace RealEstateCRM.Services
 
         public async Task<Lead?> UpdateAsync(int id, LeadUpdateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var lead = await _context.Leads.FindAsync(id);
+                var lead = await _context.Leads.FirstOrDefaultAsync(e => e.Id == id);
                 if (lead == null) return null;
 
                 lead.ContactId = dto.ContactId;
@@ -134,7 +141,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var lead = await _context.Leads.FindAsync(id);
+                var lead = await _context.Leads.FirstOrDefaultAsync(e => e.Id == id);
                 if (lead == null) return false;
 
                 _context.Leads.Remove(lead);
@@ -156,7 +163,7 @@ namespace RealEstateCRM.Services
         {
             try
             {
-                var lead = await _context.Leads.FindAsync(leadId);
+                var lead = await _context.Leads.FirstOrDefaultAsync(e => e.Id == leadId);
                 if (lead == null) return null;
 
                 var contactId = lead.ContactId;

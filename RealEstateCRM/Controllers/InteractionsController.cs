@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
 
@@ -25,7 +26,7 @@ namespace RealEstateCRM.Controllers
                 var interactions = await _interactionService.GetAllAsync(contactId, propertyId);
                 return Ok(interactions);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll interactions");
                 return StatusCode(500, "An error occurred while retrieving interactions.");
@@ -41,7 +42,7 @@ namespace RealEstateCRM.Controllers
                 if (interaction == null) return NotFound();
                 return Ok(interaction);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById interaction {InteractionId}", id);
                 return StatusCode(500, "An error occurred while retrieving the interaction.");
@@ -58,7 +59,7 @@ namespace RealEstateCRM.Controllers
                 var interaction = await _interactionService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = interaction.Id }, interaction);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating interaction");
                 return StatusCode(500, "An error occurred while creating the interaction.");
@@ -74,7 +75,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting interaction {InteractionId}", id);
                 return StatusCode(500, "An error occurred while deleting the interaction.");

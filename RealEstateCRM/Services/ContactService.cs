@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -19,11 +20,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<ContactService> _logger;
+        private readonly IPagingContext _paging;
 
-        public ContactService(CrmDbContext context, ILogger<ContactService> logger)
+        public ContactService(CrmDbContext context, ILogger<ContactService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<Contact>> GetAllAsync()
@@ -32,7 +35,7 @@ namespace RealEstateCRM.Services
             {
                 return await _context.Contacts
                     .OrderByDescending(c => c.CreatedAt)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -59,7 +62,7 @@ namespace RealEstateCRM.Services
                 if (type.HasValue)
                     q = q.Where(c => c.Type == type.Value);
 
-                return await q.OrderByDescending(c => c.CreatedAt).ToListAsync();
+                return await q.OrderByDescending(c => c.CreatedAt).ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -85,6 +88,7 @@ namespace RealEstateCRM.Services
 
         public async Task<Contact> CreateAsync(ContactCreateDto dto)
         {
+            
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -116,10 +120,11 @@ namespace RealEstateCRM.Services
 
         public async Task<Contact?> UpdateAsync(int id, ContactUpdateDto dto)
         {
+            
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var contact = await _context.Contacts.FindAsync(id);
+                var contact = await _context.Contacts.FirstOrDefaultAsync(e => e.Id == id);
                 if (contact == null) return null;
 
                 contact.FirstName = dto.FirstName;
@@ -148,7 +153,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var contact = await _context.Contacts.FindAsync(id);
+                var contact = await _context.Contacts.FirstOrDefaultAsync(e => e.Id == id);
                 if (contact == null) return false;
 
                 _context.Contacts.Remove(contact);

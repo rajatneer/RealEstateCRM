@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -19,11 +20,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<PropertyService> _logger;
+        private readonly IPagingContext _paging;
 
-        public PropertyService(CrmDbContext context, ILogger<PropertyService> logger)
+        public PropertyService(CrmDbContext context, ILogger<PropertyService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<Property>> GetAllAsync(PropertyStatus? status = null)
@@ -39,7 +42,7 @@ namespace RealEstateCRM.Services
 
                 return await query
                     .OrderByDescending(p => p.CreatedAt)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -74,7 +77,7 @@ namespace RealEstateCRM.Services
                 if (minBeds.HasValue)
                     q = q.Where(p => p.Bedrooms >= minBeds.Value);
 
-                return await q.OrderByDescending(p => p.CreatedAt).ToListAsync();
+                return await q.OrderByDescending(p => p.CreatedAt).ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -102,6 +105,7 @@ namespace RealEstateCRM.Services
 
         public async Task<Property> CreateAsync(PropertyCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.OwnerId, "Owner");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -139,10 +143,11 @@ namespace RealEstateCRM.Services
 
         public async Task<Property?> UpdateAsync(int id, PropertyUpdateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.OwnerId, "Owner");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var property = await _context.Properties.FindAsync(id);
+                var property = await _context.Properties.FirstOrDefaultAsync(e => e.Id == id);
                 if (property == null) return null;
 
                 property.Address = dto.Address;
@@ -177,7 +182,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var property = await _context.Properties.FindAsync(id);
+                var property = await _context.Properties.FirstOrDefaultAsync(e => e.Id == id);
                 if (property == null) return false;
 
                 _context.Properties.Remove(property);

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -19,11 +20,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<SiteVisitService> _logger;
+        private readonly IPagingContext _paging;
 
-        public SiteVisitService(CrmDbContext context, ILogger<SiteVisitService> logger)
+        public SiteVisitService(CrmDbContext context, ILogger<SiteVisitService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<SiteVisit>> GetAllAsync(SiteVisitStatus? status = null)
@@ -38,7 +41,7 @@ namespace RealEstateCRM.Services
                 if (status.HasValue)
                     query = query.Where(s => s.Status == status.Value);
 
-                return await query.OrderByDescending(s => s.ScheduledDate).ToListAsync();
+                return await query.OrderByDescending(s => s.ScheduledDate).ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -65,6 +68,8 @@ namespace RealEstateCRM.Services
 
         public async Task<SiteVisit> CreateAsync(SiteVisitCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -96,10 +101,12 @@ namespace RealEstateCRM.Services
 
         public async Task<SiteVisit?> UpdateAsync(int id, SiteVisitUpdateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var siteVisit = await _context.SiteVisits.FindAsync(id);
+                var siteVisit = await _context.SiteVisits.FirstOrDefaultAsync(e => e.Id == id);
                 if (siteVisit == null) return null;
 
                 siteVisit.ContactId = dto.ContactId;
@@ -129,7 +136,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var siteVisit = await _context.SiteVisits.FindAsync(id);
+                var siteVisit = await _context.SiteVisits.FirstOrDefaultAsync(e => e.Id == id);
                 if (siteVisit == null) return false;
 
                 _context.SiteVisits.Remove(siteVisit);
@@ -157,7 +164,7 @@ namespace RealEstateCRM.Services
                     .Where(s => s.Status == SiteVisitStatus.Scheduled || s.Status == SiteVisitStatus.Confirmed)
                     .Where(s => s.ScheduledDate >= DateTime.UtcNow)
                     .OrderBy(s => s.ScheduledDate)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {

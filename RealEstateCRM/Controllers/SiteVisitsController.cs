@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -26,7 +27,7 @@ namespace RealEstateCRM.Controllers
                 var visits = await _siteVisitService.GetAllAsync(status);
                 return Ok(visits);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll site visits");
                 return StatusCode(500, "An error occurred while retrieving site visits.");
@@ -41,7 +42,7 @@ namespace RealEstateCRM.Controllers
                 var visits = await _siteVisitService.GetUpcomingAsync();
                 return Ok(visits);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving upcoming site visits");
                 return StatusCode(500, "An error occurred while retrieving upcoming site visits.");
@@ -57,7 +58,7 @@ namespace RealEstateCRM.Controllers
                 if (visit == null) return NotFound();
                 return Ok(visit);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById site visit {SiteVisitId}", id);
                 return StatusCode(500, "An error occurred while retrieving the site visit.");
@@ -74,7 +75,7 @@ namespace RealEstateCRM.Controllers
                 var visit = await _siteVisitService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = visit.Id }, visit);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating site visit");
                 return StatusCode(500, "An error occurred while creating the site visit.");
@@ -92,7 +93,7 @@ namespace RealEstateCRM.Controllers
                 if (visit == null) return NotFound();
                 return Ok(visit);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating site visit {SiteVisitId}", id);
                 return StatusCode(500, "An error occurred while updating the site visit.");
@@ -108,7 +109,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting site visit {SiteVisitId}", id);
                 return StatusCode(500, "An error occurred while deleting the site visit.");

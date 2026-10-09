@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -18,11 +19,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<BrokerageService> _logger;
+        private readonly IPagingContext _paging;
 
-        public BrokerageService(CrmDbContext context, ILogger<BrokerageService> logger)
+        public BrokerageService(CrmDbContext context, ILogger<BrokerageService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<Brokerage>> GetAllAsync(BrokeragePaymentStatus? status = null)
@@ -37,7 +40,7 @@ namespace RealEstateCRM.Services
                 if (status.HasValue)
                     query = query.Where(b => b.PaymentStatus == status.Value);
 
-                return await query.OrderByDescending(b => b.CreatedAt).ToListAsync();
+                return await query.OrderByDescending(b => b.CreatedAt).ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -64,18 +67,20 @@ namespace RealEstateCRM.Services
 
         public async Task<Brokerage> CreateAsync(BrokerageCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Lead>(dto.LeadId, "Lead");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var commissionAmount = dto.DealValue * dto.CommissionPercent / 100m;
+                var commissionAmount = Money.Round(dto.DealValue * dto.CommissionPercent / 100m);
                 var gstPercent = 18.00m;
-                var gstAmount = commissionAmount * gstPercent / 100m;
+                var gstAmount = Money.Round(commissionAmount * gstPercent / 100m);
                 var totalPayable = commissionAmount + gstAmount;
 
                 decimal? subBrokerAmount = null;
                 if (dto.SubBrokerSplitPercent.HasValue && dto.SubBrokerSplitPercent > 0)
                 {
-                    subBrokerAmount = commissionAmount * dto.SubBrokerSplitPercent.Value / 100m;
+                    subBrokerAmount = Money.Round(commissionAmount * dto.SubBrokerSplitPercent.Value / 100m);
                 }
 
                 var brokerage = new Brokerage
@@ -113,20 +118,22 @@ namespace RealEstateCRM.Services
 
         public async Task<Brokerage?> UpdateAsync(int id, BrokerageUpdateDto dto)
         {
+            await _context.EnsureExistsAsync<Lead>(dto.LeadId, "Lead");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var brokerage = await _context.Brokerages.FindAsync(id);
+                var brokerage = await _context.Brokerages.FirstOrDefaultAsync(e => e.Id == id);
                 if (brokerage == null) return null;
 
-                var commissionAmount = dto.DealValue * dto.CommissionPercent / 100m;
-                var gstAmount = commissionAmount * brokerage.GstPercent / 100m;
+                var commissionAmount = Money.Round(dto.DealValue * dto.CommissionPercent / 100m);
+                var gstAmount = Money.Round(commissionAmount * brokerage.GstPercent / 100m);
                 var totalPayable = commissionAmount + gstAmount;
 
                 decimal? subBrokerAmount = null;
                 if (dto.SubBrokerSplitPercent.HasValue && dto.SubBrokerSplitPercent > 0)
                 {
-                    subBrokerAmount = commissionAmount * dto.SubBrokerSplitPercent.Value / 100m;
+                    subBrokerAmount = Money.Round(commissionAmount * dto.SubBrokerSplitPercent.Value / 100m);
                 }
 
                 brokerage.LeadId = dto.LeadId;
@@ -161,7 +168,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var brokerage = await _context.Brokerages.FindAsync(id);
+                var brokerage = await _context.Brokerages.FirstOrDefaultAsync(e => e.Id == id);
                 if (brokerage == null) return false;
 
                 _context.Brokerages.Remove(brokerage);

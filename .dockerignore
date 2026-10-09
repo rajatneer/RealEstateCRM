@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+**/Logs/
+**/*.db
+.git
+RealEstateCRM.Tests/

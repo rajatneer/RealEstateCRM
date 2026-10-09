@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace RealEstateCRM.Models.DTOs
 {
     public class TimelineEntryDto
@@ -7,162 +9,202 @@ namespace RealEstateCRM.Models.DTOs
         public string Summary { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
     }
+
+    // ── Contacts ──
     public class ContactCreateDto
     {
+        [Required, StringLength(100)]
         public string FirstName { get; set; } = string.Empty;
+
+        [Required, StringLength(100)]
         public string LastName { get; set; } = string.Empty;
+
+        [EmailAddress, StringLength(200)]
         public string? Email { get; set; }
+
+        [StringLength(20)]
         public string? Phone { get; set; }
+
+        [EnumDataType(typeof(ContactType))]
         public ContactType Type { get; set; }
+
+        [StringLength(500)]
         public string? Notes { get; set; }
     }
 
-    public class ContactUpdateDto
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string? Email { get; set; }
-        public string? Phone { get; set; }
-        public ContactType Type { get; set; }
-        public string? Notes { get; set; }
-    }
+    public class ContactUpdateDto : ContactCreateDto { }
 
+    // ── Properties ──
     public class PropertyCreateDto
     {
+        [Required, StringLength(300)]
         public string Address { get; set; } = string.Empty;
+
+        [Required, StringLength(100)]
         public string City { get; set; } = string.Empty;
+
+        [Required, StringLength(50)]
         public string State { get; set; } = string.Empty;
+
+        [StringLength(10)]
         public string? ZipCode { get; set; }
+
+        [EnumDataType(typeof(PropertyType))]
         public PropertyType Type { get; set; }
+
+        [EnumDataType(typeof(PropertyStatus))]
         public PropertyStatus Status { get; set; }
+
+        [Range(0, 10000000000000)]
         public decimal Price { get; set; }
+
+        [Range(0, 100)]
         public int Bedrooms { get; set; }
+
+        [Range(0, 100)]
         public int Bathrooms { get; set; }
+
+        [Range(0, 10000000)]
         public double SquareFeet { get; set; }
+
+        [StringLength(1000)]
         public string? Description { get; set; }
+
         public int? OwnerId { get; set; }
     }
 
-    public class PropertyUpdateDto
-    {
-        public string Address { get; set; } = string.Empty;
-        public string City { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
-        public string? ZipCode { get; set; }
-        public PropertyType Type { get; set; }
-        public PropertyStatus Status { get; set; }
-        public decimal Price { get; set; }
-        public int Bedrooms { get; set; }
-        public int Bathrooms { get; set; }
-        public double SquareFeet { get; set; }
-        public string? Description { get; set; }
-        public int? OwnerId { get; set; }
-    }
+    public class PropertyUpdateDto : PropertyCreateDto { }
 
+    // ── Interactions ──
     public class InteractionCreateDto
     {
+        [Range(1, int.MaxValue)]
         public int ContactId { get; set; }
+
         public int? PropertyId { get; set; }
+
+        [EnumDataType(typeof(InteractionType))]
         public InteractionType Type { get; set; }
+
+        [Required, StringLength(2000)]
         public string Description { get; set; } = string.Empty;
+
         public DateTime? Date { get; set; }
     }
 
-    // Lead DTOs
+    // ── Leads ──
     public class LeadCreateDto
     {
+        [Range(1, int.MaxValue)]
         public int ContactId { get; set; }
+
         public int? PropertyId { get; set; }
+
+        [EnumDataType(typeof(LeadStage))]
         public LeadStage Stage { get; set; } = LeadStage.New;
+
+        [EnumDataType(typeof(LeadSource))]
         public LeadSource Source { get; set; }
+
+        [Range(0, 10000000000000)]
         public decimal? EstimatedValue { get; set; }
+
+        [StringLength(1000)]
         public string? Notes { get; set; }
     }
 
-    public class LeadUpdateDto
-    {
-        public int ContactId { get; set; }
-        public int? PropertyId { get; set; }
-        public LeadStage Stage { get; set; }
-        public LeadSource Source { get; set; }
-        public decimal? EstimatedValue { get; set; }
-        public string? Notes { get; set; }
-    }
+    public class LeadUpdateDto : LeadCreateDto { }
 
-    // Task DTOs
+    // ── Tasks ──
     public class CrmTaskCreateDto
     {
+        [Required, StringLength(200)]
         public string Title { get; set; } = string.Empty;
+
+        [StringLength(1000)]
         public string? Description { get; set; }
+
         public DateTime DueDate { get; set; }
+
+        [EnumDataType(typeof(TaskPriority))]
         public TaskPriority Priority { get; set; } = TaskPriority.Medium;
+
         public int? ContactId { get; set; }
         public int? PropertyId { get; set; }
         public int? LeadId { get; set; }
     }
 
-    public class CrmTaskUpdateDto
+    public class CrmTaskUpdateDto : CrmTaskCreateDto
     {
-        public string Title { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public DateTime DueDate { get; set; }
-        public TaskPriority Priority { get; set; }
+        [EnumDataType(typeof(CrmTaskStatus))]
         public CrmTaskStatus Status { get; set; }
-        public int? ContactId { get; set; }
-        public int? PropertyId { get; set; }
-        public int? LeadId { get; set; }
     }
 
-    // Brokerage DTOs
+    // ── Brokerage ──
     public class BrokerageCreateDto
     {
         public int? LeadId { get; set; }
         public int? PropertyId { get; set; }
+
+        [Range(0.01, 10000000000000)]
         public decimal DealValue { get; set; }
+
+        [Range(0, 100)]
         public decimal CommissionPercent { get; set; }
+
+        [StringLength(200)]
         public string? SubBrokerName { get; set; }
+
+        [Range(0, 100)]
         public decimal? SubBrokerSplitPercent { get; set; }
+
+        [StringLength(1000)]
         public string? Notes { get; set; }
     }
 
-    public class BrokerageUpdateDto
+    public class BrokerageUpdateDto : BrokerageCreateDto
     {
-        public int? LeadId { get; set; }
-        public int? PropertyId { get; set; }
-        public decimal DealValue { get; set; }
-        public decimal CommissionPercent { get; set; }
-        public string? SubBrokerName { get; set; }
-        public decimal? SubBrokerSplitPercent { get; set; }
+        [EnumDataType(typeof(BrokeragePaymentStatus))]
         public BrokeragePaymentStatus PaymentStatus { get; set; }
-        public string? Notes { get; set; }
     }
 
-    // Site Visit DTOs
+    // ── Site visits ──
     public class SiteVisitCreateDto
     {
+        [Range(1, int.MaxValue)]
         public int ContactId { get; set; }
+
+        [Range(1, int.MaxValue)]
         public int PropertyId { get; set; }
+
         public DateTime ScheduledDate { get; set; }
+
+        [StringLength(200)]
         public string? PickupLocation { get; set; }
+
+        [StringLength(1000)]
         public string? Notes { get; set; }
     }
 
-    public class SiteVisitUpdateDto
+    public class SiteVisitUpdateDto : SiteVisitCreateDto
     {
-        public int ContactId { get; set; }
-        public int PropertyId { get; set; }
-        public DateTime ScheduledDate { get; set; }
+        [EnumDataType(typeof(SiteVisitStatus))]
         public SiteVisitStatus Status { get; set; }
-        public string? PickupLocation { get; set; }
+
+        [StringLength(500)]
         public string? Feedback { get; set; }
-        public string? Notes { get; set; }
     }
 
-    // EMI Calculator DTOs
+    // ── Calculators ──
     public class EmiCalculatorRequest
     {
+        [Range(1, 10000000000000)]
         public decimal LoanAmount { get; set; }
+
+        [Range(0, 100)]
         public decimal AnnualInterestRate { get; set; }
+
+        [Range(1, 600)]
         public int TenureMonths { get; set; }
     }
 
@@ -178,7 +220,10 @@ namespace RealEstateCRM.Models.DTOs
 
     public class StampDutyRequest
     {
+        [Range(0.01, 10000000000000)]
         public decimal PropertyValue { get; set; }
+
+        [Required, StringLength(50)]
         public string State { get; set; } = string.Empty;
     }
 

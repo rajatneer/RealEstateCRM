@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -26,7 +27,7 @@ namespace RealEstateCRM.Controllers
                 var brokerages = await _brokerageService.GetAllAsync(status);
                 return Ok(brokerages);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll brokerages");
                 return StatusCode(500, "An error occurred while retrieving brokerages.");
@@ -42,7 +43,7 @@ namespace RealEstateCRM.Controllers
                 if (brokerage == null) return NotFound();
                 return Ok(brokerage);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById brokerage {BrokerageId}", id);
                 return StatusCode(500, "An error occurred while retrieving the brokerage.");
@@ -59,7 +60,7 @@ namespace RealEstateCRM.Controllers
                 var brokerage = await _brokerageService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = brokerage.Id }, brokerage);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating brokerage");
                 return StatusCode(500, "An error occurred while creating the brokerage.");
@@ -77,7 +78,7 @@ namespace RealEstateCRM.Controllers
                 if (brokerage == null) return NotFound();
                 return Ok(brokerage);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating brokerage {BrokerageId}", id);
                 return StatusCode(500, "An error occurred while updating the brokerage.");
@@ -93,7 +94,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting brokerage {BrokerageId}", id);
                 return StatusCode(500, "An error occurred while deleting the brokerage.");

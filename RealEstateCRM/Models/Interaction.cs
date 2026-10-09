@@ -1,11 +1,16 @@
+using System.Text.Json.Serialization;
+using RealEstateCRM.Tenancy;
 using System.ComponentModel.DataAnnotations;
 
 namespace RealEstateCRM.Models
 {
-    public class Interaction
+    public class Interaction : ITenantEntity
     {
         [Key]
         public int Id { get; set; }
+
+        [JsonIgnore]
+        public int CompanyId { get; set; }
 
         [Required]
         public int ContactId { get; set; }

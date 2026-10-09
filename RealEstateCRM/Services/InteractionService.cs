@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RealEstateCRM.Data;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 
@@ -17,11 +18,13 @@ namespace RealEstateCRM.Services
     {
         private readonly CrmDbContext _context;
         private readonly ILogger<InteractionService> _logger;
+        private readonly IPagingContext _paging;
 
-        public InteractionService(CrmDbContext context, ILogger<InteractionService> logger)
+        public InteractionService(CrmDbContext context, ILogger<InteractionService> logger, IPagingContext paging)
         {
             _context = context;
             _logger = logger;
+            _paging = paging;
         }
 
         public async Task<List<Interaction>> GetAllAsync(int? contactId = null, int? propertyId = null)
@@ -41,7 +44,7 @@ namespace RealEstateCRM.Services
 
                 return await query
                     .OrderByDescending(i => i.Date)
-                    .ToListAsync();
+                    .ToPagedListAsync(_paging);
             }
             catch (DbUpdateException ex)
             {
@@ -68,6 +71,8 @@ namespace RealEstateCRM.Services
 
         public async Task<Interaction> CreateAsync(InteractionCreateDto dto)
         {
+            await _context.EnsureExistsAsync<Contact>(dto.ContactId, "Contact");
+            await _context.EnsureExistsAsync<Property>(dto.PropertyId, "Property");
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -101,7 +106,7 @@ namespace RealEstateCRM.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var interaction = await _context.Interactions.FindAsync(id);
+                var interaction = await _context.Interactions.FirstOrDefaultAsync(e => e.Id == id);
                 if (interaction == null) return false;
 
                 _context.Interactions.Remove(interaction);

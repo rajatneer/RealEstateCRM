@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -26,7 +27,7 @@ namespace RealEstateCRM.Controllers
                 var properties = await _propertyService.GetAllAsync(status);
                 return Ok(properties);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll properties");
                 return StatusCode(500, "An error occurred while retrieving properties.");
@@ -47,7 +48,7 @@ namespace RealEstateCRM.Controllers
                 var properties = await _propertyService.SearchAsync(q, type, status, minPrice, maxPrice, minBeds);
                 return Ok(properties);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error searching properties");
                 return StatusCode(500, "An error occurred while searching properties.");
@@ -63,7 +64,7 @@ namespace RealEstateCRM.Controllers
                 if (property == null) return NotFound();
                 return Ok(property);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById property {PropertyId}", id);
                 return StatusCode(500, "An error occurred while retrieving the property.");
@@ -80,7 +81,7 @@ namespace RealEstateCRM.Controllers
                 var property = await _propertyService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = property.Id }, property);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating property");
                 return StatusCode(500, "An error occurred while creating the property.");
@@ -98,7 +99,7 @@ namespace RealEstateCRM.Controllers
                 if (property == null) return NotFound();
                 return Ok(property);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating property {PropertyId}", id);
                 return StatusCode(500, "An error occurred while updating the property.");
@@ -114,7 +115,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting property {PropertyId}", id);
                 return StatusCode(500, "An error occurred while deleting the property.");

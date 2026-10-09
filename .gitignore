@@ -1,0 +1,13 @@
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.db
+*.db-shm
+*.db-wal
+Logs/
+.vs/
+.vscode/
+*.sln.docstates
+TestResults/

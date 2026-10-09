@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -26,7 +27,7 @@ namespace RealEstateCRM.Controllers
                 var contacts = await _contactService.GetAllAsync();
                 return Ok(contacts);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll contacts");
                 return StatusCode(500, "An error occurred while retrieving contacts.");
@@ -41,7 +42,7 @@ namespace RealEstateCRM.Controllers
                 var contacts = await _contactService.SearchAsync(q, type);
                 return Ok(contacts);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error searching contacts");
                 return StatusCode(500, "An error occurred while searching contacts.");
@@ -57,7 +58,7 @@ namespace RealEstateCRM.Controllers
                 if (contact == null) return NotFound();
                 return Ok(contact);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById contact {ContactId}", id);
                 return StatusCode(500, "An error occurred while retrieving the contact.");
@@ -74,7 +75,7 @@ namespace RealEstateCRM.Controllers
                 var contact = await _contactService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = contact.Id }, contact);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating contact");
                 return StatusCode(500, "An error occurred while creating the contact.");
@@ -92,7 +93,7 @@ namespace RealEstateCRM.Controllers
                 if (contact == null) return NotFound();
                 return Ok(contact);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating contact {ContactId}", id);
                 return StatusCode(500, "An error occurred while updating the contact.");
@@ -108,7 +109,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting contact {ContactId}", id);
                 return StatusCode(500, "An error occurred while deleting the contact.");

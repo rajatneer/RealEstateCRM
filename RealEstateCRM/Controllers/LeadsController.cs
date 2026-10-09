@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
@@ -27,7 +28,7 @@ namespace RealEstateCRM.Controllers
                 if (timeline == null) return NotFound();
                 return Ok(timeline);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error getting timeline for lead {LeadId}", id);
                 return StatusCode(500, "An error occurred while retrieving the timeline.");
@@ -42,7 +43,7 @@ namespace RealEstateCRM.Controllers
                 var leads = await _leadService.GetAllAsync(stage);
                 return Ok(leads);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetAll leads");
                 return StatusCode(500, "An error occurred while retrieving leads.");
@@ -58,7 +59,7 @@ namespace RealEstateCRM.Controllers
                 if (lead == null) return NotFound();
                 return Ok(lead);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error in GetById lead {LeadId}", id);
                 return StatusCode(500, "An error occurred while retrieving the lead.");
@@ -75,7 +76,7 @@ namespace RealEstateCRM.Controllers
                 var lead = await _leadService.CreateAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = lead.Id }, lead);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating lead");
                 return StatusCode(500, "An error occurred while creating the lead.");
@@ -93,7 +94,7 @@ namespace RealEstateCRM.Controllers
                 if (lead == null) return NotFound();
                 return Ok(lead);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating lead {LeadId}", id);
                 return StatusCode(500, "An error occurred while updating the lead.");
@@ -109,7 +110,7 @@ namespace RealEstateCRM.Controllers
                 if (!result) return NotFound();
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting lead {LeadId}", id);
                 return StatusCode(500, "An error occurred while deleting the lead.");

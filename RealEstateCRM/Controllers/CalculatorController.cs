@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models.DTOs;
 using RealEstateCRM.Services;
 
@@ -28,7 +29,7 @@ namespace RealEstateCRM.Controllers
                 var result = _calculatorService.CalculateEmi(request);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error calculating EMI");
                 return StatusCode(500, "An error occurred while calculating EMI.");
@@ -46,7 +47,7 @@ namespace RealEstateCRM.Controllers
                 var result = _calculatorService.CalculateStampDuty(request);
                 return Ok(result);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error calculating stamp duty");
                 return StatusCode(500, "An error occurred while calculating stamp duty.");
@@ -68,7 +69,7 @@ namespace RealEstateCRM.Controllers
                 };
                 return Ok(states);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving states list");
                 return StatusCode(500, "An error occurred.");
