@@ -1536,7 +1536,7 @@ function renderProjects(projects) {
             <td>${escapeHtml([p.location, p.city].filter(Boolean).join(', '))}</td>
             <td>${p.totalVillas}</td>
             <td><span class="${badgeClass(p.status)}">${spaced(p.status)}</span></td>
-            <td>${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)${p.overdueMilestones ? ` <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</td>
+            <td><div class="progress"><span style="width:${p.progressPercent}%"></span></div><small>${p.completedMilestones} of ${p.totalMilestones} steps${p.overdueMilestones ? ` &middot; <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</small></td>
             <td>${p.nextMilestone ? `${escapeHtml(p.nextMilestone.title)}<br><small>${fmtDay(p.nextMilestone.plannedDate)}</small>` : '-'}</td>
             <td class="actions">
                 <button class="btn btn-sm btn-primary" data-onclick="openProject(${p.id})">Open</button>

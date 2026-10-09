@@ -5,52 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real Estate CRM</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
 </head>
 <body>
     <div id="login-container" class="login-container" style="display:none">
+        <aside class="login-brand">
+            <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#B7862C"/><path d="M7 25V14l9-7 9 7v11" fill="none" stroke="#12302B" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 25v-6h6v6" fill="none" stroke="#12302B" stroke-width="2.2" stroke-linejoin="round"/></svg>
+            <h1>Villa CRM</h1>
+            <p>Leads, site visits and every villa project deadline, in one place.</p>
+        </aside>
         <form id="login-form" class="login-form" data-onsubmit="handleLogin(event)">
-            <h2>Login</h2>
+            <h2>Welcome back</h2>
+            <p class="login-sub">Sign in to your company workspace.</p>
             <div class="form-group">
-                <label>Company Code</label>
-                <input type="text" id="login-company" required placeholder="Company Code">
+                <label for="login-company">Company code</label>
+                <input type="text" id="login-company" required autocomplete="organization">
             </div>
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="login-username" required placeholder="Username">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" required autocomplete="username">
             </div>
             <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="login-password" required placeholder="Password">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" required autocomplete="current-password">
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%">Login</button>
+            <button type="submit" class="btn btn-primary btn-block">Sign in</button>
             <div id="login-error" class="login-error"></div>
         </form>
     </div>
     <div id="app-main" style="display:none">
         <nav class="sidebar">
         <div class="logo">
-            <span class="logo-icon">&#127968;</span>
-            <h2>RE CRM</h2>
+            <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#B7862C"/><path d="M7 25V14l9-7 9 7v11" fill="none" stroke="#12302B" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 25v-6h6v6" fill="none" stroke="#12302B" stroke-width="2.2" stroke-linejoin="round"/></svg>
+            <div><h2>Villa CRM</h2><small>Projects &amp; sales</small></div>
         </div>
         <ul class="nav-links">
-            <li><a href="#" class="nav-link active" data-page="dashboard">&#128202; Dashboard</a></li>
-            <li><a href="#" class="nav-link" data-page="contacts">&#128101; Contacts</a></li>
-            <li><a href="#" class="nav-link" data-page="properties">&#127970; Properties</a></li>
-            <li><a href="#" class="nav-link" data-page="leads">&#127919; Leads</a></li>
-            <li><a href="#" class="nav-link" data-page="tasks">&#9745; Tasks</a></li>
-            <li><a href="#" class="nav-link" data-page="interactions">&#128172; Interactions</a></li>
-            <li><a href="#" class="nav-link" data-page="brokerages">&#128176; Brokerage</a></li>
-            <li><a href="#" class="nav-link" data-page="calculator">&#129518; Calculator</a></li>
-            <li><a href="#" class="nav-link" data-page="sitevisits">&#128205; Site Visits</a></li>
-            <li><a href="#" class="nav-link" data-page="projects">&#127969; Projects</a></li>
+            <li class="nav-group">Overview</li>
+            <li><a href="#" class="nav-link active" data-page="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Dashboard</span></a></li>
+            <li class="nav-group">Sales</li>
+            <li><a href="#" class="nav-link" data-page="contacts"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.2 2.3 3.5 5.2"/></svg><span>Contacts</span></a></li>
+            <li><a href="#" class="nav-link" data-page="leads"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg><span>Leads</span></a></li>
+            <li><a href="#" class="nav-link" data-page="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="m8.5 12 2.4 2.4 4.6-4.9"/></svg><span>Tasks</span></a></li>
+            <li><a href="#" class="nav-link" data-page="interactions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v10H9.5L5 19.5v-4H4z"/></svg><span>Interactions</span></a></li>
+            <li><a href="#" class="nav-link" data-page="sitevisits"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.800 12 21 12 21z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Site Visits</span></a></li>
+            <li class="nav-group">Inventory</li>
+            <li><a href="#" class="nav-link" data-page="projects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.5h18"/><path d="M5 20.5V11l7-6 7 6v9.5"/><path d="M9.5 20.5v-5h5v5"/></svg><span>Projects</span></a></li>
+            <li><a href="#" class="nav-link" data-page="properties"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l7-5 7 5v12"/><path d="M17 21V12l4 2.5V21"/><path d="M7 21v-5h6v5"/></svg><span>Properties</span></a></li>
+            <li class="nav-group">Money</li>
+            <li><a href="#" class="nav-link" data-page="brokerages"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/></svg><span>Brokerage</span></a></li>
+            <li><a href="#" class="nav-link" data-page="calculator"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 12v.01M12 12v.01M15.5 12v.01M8.5 16v.01M12 16v.01M15.5 16v.01"/></svg><span>Calculator</span></a></li>
         </ul>
-        <button class="btn btn-secondary" style="margin:16px 0 0 16px;width:80%" data-onclick="logout()">Logout</button>
+        <button class="btn-logout" data-onclick="logout()">Log out</button>
     </nav>
 
         <main class="content">
         <!-- Dashboard -->
         <section id="page-dashboard" class="page active">
-            <h1>Dashboard</h1>
+            <div class="page-header"><h1>Dashboard</h1></div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number" id="stat-contacts">0</div>
