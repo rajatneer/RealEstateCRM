@@ -1611,7 +1611,7 @@ async function openProject(id) {
                 <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
                 <td>${spaced(m.category)}</td>
                 <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
-                <td><select class="ms-status" data-mid="${m.id}" data-orig="${m.status}">${optionsHtml(MILESTONE_STATUSES, m.status)}</select></td>
+                <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
                 <td>${fmtDay(m.completedDate)}</td>
                 <td>${escapeHtml(m.referenceNo) || '-'}</td>
                 <td class="actions">
@@ -1622,11 +1622,19 @@ async function openProject(id) {
         openModal(p.name, `
             <p>${escapeHtml([p.location, p.city, p.state].filter(Boolean).join(', '))} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
             <p>Progress: ${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)</p>
-            <div class="table-container">${rows}</div>
+            <div class="form-group">
+                <label>Current step (project abhi kis step par hai)</label>
+                <select id="current-step-select">
+                    <option value="">-- Select current step --</option>
+                    ${p.milestones.filter(m => m.status !== 'Cancelled').map(m => `<option value="${m.id}" ${(p.milestones.find(x => x.status === 'InProgress') || p.nextMilestone || {}).id === m.id ? 'selected' : ''}>${escapeHtml(m.title)} (${fmtDay(m.plannedDate)})</option>`).join('')}
+                </select>
+                <small>Isse pehle ke saare steps Completed ho jaayenge, ye step In Progress, baaki Pending.</small>
+            </div>
             <div class="form-actions">
-                <button class="btn btn-primary" data-onclick="saveMilestoneStatuses(${p.id})">Save status changes</button>
+                <button class="btn btn-primary" data-onclick="saveCurrentStep(${p.id})">Save</button>
                 <button class="btn" data-onclick="showMilestoneForm(${p.id})">+ Add step</button>
-            </div>`);
+            </div>
+            <div class="table-container">${rows}</div>`);
         window.__openProject = p;
     } catch (err) { showToast('Failed to load project: ' + err.message, true); }
 }
@@ -1697,27 +1705,27 @@ async function deleteMilestone(id, projectId) {
 }
 
 
-// Save the status dropdowns changed in the open project (manual, one click).
-async function saveMilestoneStatuses(projectId) {
+// Set the project's current step: earlier steps -> Completed, chosen -> In Progress, later -> Pending.
+async function saveCurrentStep(projectId) {
     const p = window.__openProject;
-    const changed = Array.from(document.querySelectorAll('#modal-body select.ms-status'))
-        .filter(s => s.value !== s.dataset.orig);
-    if (!p || changed.length === 0) { showToast('No status changes to save'); return; }
+    const selId = Number(document.getElementById('current-step-select').value);
+    if (!p || !selId) { showToast('Select the current step first', true); return; }
+    const steps = p.milestones.filter(m => m.status !== 'Cancelled');
+    const idx = steps.findIndex(m => m.id === selId);
+    if (idx < 0) return;
     try {
-        for (const sel of changed) {
-            const m = p.milestones.find(x => x.id === Number(sel.dataset.mid));
-            if (!m) continue;
+        for (let i = 0; i < steps.length; i++) {
+            const m = steps[i];
+            const target = i < idx ? 'Completed' : (i === idx ? 'InProgress' : 'Pending');
+            if (m.status === target) continue;
             await apiPut(`/projects/milestones/${m.id}`, {
-                category: m.category,
-                status: sel.value,
-                title: m.title,
+                category: m.category, status: target, title: m.title,
                 plannedDate: m.plannedDate,
-                completedDate: sel.value === 'Completed' ? (m.completedDate || null) : null,
-                referenceNo: m.referenceNo,
-                notes: m.notes
+                completedDate: target === 'Completed' ? (m.completedDate || null) : null,
+                referenceNo: m.referenceNo, notes: m.notes
             });
         }
-        showToast(`${changed.length} status(es) saved!`);
+        showToast('Current step saved!');
         loadProjects(); openProject(projectId);
     } catch (err) { showToast('Error: ' + err.message, true); }
 }
