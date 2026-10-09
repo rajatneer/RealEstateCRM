@@ -1611,11 +1611,10 @@ async function openProject(id) {
                 <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
                 <td>${spaced(m.category)}</td>
                 <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
-                <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
+                <td><select class="ms-status" data-mid="${m.id}" data-orig="${m.status}">${optionsHtml(MILESTONE_STATUSES, m.status)}</select></td>
                 <td>${fmtDay(m.completedDate)}</td>
                 <td>${escapeHtml(m.referenceNo) || '-'}</td>
                 <td class="actions">
-                    ${m.status === 'Completed' || m.status === 'Cancelled' ? '' : `<button class="btn btn-sm btn-primary" data-onclick="completeMilestone(${m.id}, ${p.id})">Done</button>`}
                     <button class="btn btn-sm btn-edit" data-onclick="editMilestone(${p.id}, ${m.id})">Edit</button>
                     <button class="btn btn-sm btn-danger" data-onclick="deleteMilestone(${m.id}, ${p.id})">Delete</button>
                 </td>
@@ -1624,7 +1623,11 @@ async function openProject(id) {
             <p>${escapeHtml([p.location, p.city, p.state].filter(Boolean).join(', '))} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
             <p>Progress: ${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)</p>
             <div class="table-container">${rows}</div>
-            <div class="form-actions"><button class="btn btn-primary" data-onclick="showMilestoneForm(${p.id})">+ Add step</button></div>`);
+            <div class="form-actions">
+                <button class="btn btn-primary" data-onclick="saveMilestoneStatuses(${p.id})">Save status changes</button>
+                <button class="btn" data-onclick="showMilestoneForm(${p.id})">+ Add step</button>
+            </div>`);
+        window.__openProject = p;
     } catch (err) { showToast('Failed to load project: ' + err.message, true); }
 }
 
@@ -1689,6 +1692,32 @@ async function deleteMilestone(id, projectId) {
     try {
         await apiDelete(`/projects/milestones/${id}`);
         showToast('Step deleted');
+        loadProjects(); openProject(projectId);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+
+// Save the status dropdowns changed in the open project (manual, one click).
+async function saveMilestoneStatuses(projectId) {
+    const p = window.__openProject;
+    const changed = Array.from(document.querySelectorAll('#modal-body select.ms-status'))
+        .filter(s => s.value !== s.dataset.orig);
+    if (!p || changed.length === 0) { showToast('No status changes to save'); return; }
+    try {
+        for (const sel of changed) {
+            const m = p.milestones.find(x => x.id === Number(sel.dataset.mid));
+            if (!m) continue;
+            await apiPut(`/projects/milestones/${m.id}`, {
+                category: m.category,
+                status: sel.value,
+                title: m.title,
+                plannedDate: m.plannedDate,
+                completedDate: sel.value === 'Completed' ? (m.completedDate || null) : null,
+                referenceNo: m.referenceNo,
+                notes: m.notes
+            });
+        }
+        showToast(`${changed.length} status(es) saved!`);
         loadProjects(); openProject(projectId);
     } catch (err) { showToast('Error: ' + err.message, true); }
 }
