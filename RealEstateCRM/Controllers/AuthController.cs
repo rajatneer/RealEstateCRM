@@ -24,13 +24,16 @@ namespace RealEstateCRM.Controllers
         private readonly CrmDbContext _context;
         private readonly ITokenService _tokens;
         private readonly ITenantProvider _tenant;
+        private readonly IUserSessionValidator _sessions;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(CrmDbContext context, ITokenService tokens, ITenantProvider tenant, ILogger<AuthController> logger)
+        public AuthController(CrmDbContext context, ITokenService tokens, ITenantProvider tenant,
+            IUserSessionValidator sessions, ILogger<AuthController> logger)
         {
             _context = context;
             _tokens = tokens;
             _tenant = tenant;
+            _sessions = sessions;
             _logger = logger;
         }
 
@@ -116,9 +119,16 @@ namespace RealEstateCRM.Controllers
             if (PasswordHasher.Verify(dto.CurrentPassword, user.PasswordHash) == PasswordVerifyResult.Failed)
                 throw new BadRequestException("Current password is incorrect.");
 
+            var company = await _context.Companies.FirstAsync(c => c.Id == user.CompanyId);
+
+            // Changing the password signs out every other session; this caller gets a fresh token.
             user.PasswordHash = PasswordHasher.Hash(dto.NewPassword);
+            user.TokenVersion++;
             await _context.SaveChangesAsync();
-            return NoContent();
+            _sessions.Invalidate(user.Id);
+
+            var (token, expiresAt) = _tokens.Create(user, company);
+            return Ok(new { token, expiresAt });
         }
 
         [Authorize(Roles = Roles.Owner)]
@@ -144,6 +154,37 @@ namespace RealEstateCRM.Controllers
             await _context.SaveChangesAsync();
 
             return StatusCode(StatusCodes.Status201Created, new { id = user.Id, username = user.Username, role = user.Role });
+        }
+
+        [Authorize(Roles = Roles.Owner)]
+        [HttpGet("users")]
+        public async Task<IActionResult> ListUsers()
+        {
+            var users = await _context.Users
+                .Where(u => u.CompanyId == _tenant.CompanyId)
+                .OrderBy(u => u.Username)
+                .Select(u => new { id = u.Id, username = u.Username, role = u.Role, isActive = u.IsActive })
+                .ToListAsync();
+            return Ok(users);
+        }
+
+        [Authorize(Roles = Roles.Owner)]
+        [HttpPut("users/{id:int}/active")]
+        public async Task<IActionResult> SetActive(int id, [FromBody] SetActiveDto dto)
+        {
+            if (id == _tenant.UserId)
+                throw new BadRequestException("You cannot change your own active status.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.CompanyId == _tenant.CompanyId);
+            if (user == null) throw new NotFoundException($"User {id} was not found.");
+
+            user.IsActive = dto.IsActive;
+            if (!dto.IsActive)
+                user.TokenVersion++; // existing tokens stop working immediately
+            await _context.SaveChangesAsync();
+            _sessions.Invalidate(user.Id);
+
+            return Ok(new { id = user.Id, username = user.Username, role = user.Role, isActive = user.IsActive });
         }
 
         private IActionResult InvalidCredentials() =>
@@ -174,6 +215,11 @@ namespace RealEstateCRM.Controllers
 
         [Required, StringLength(128, MinimumLength = 10)]
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class SetActiveDto
+    {
+        public bool IsActive { get; set; }
     }
 
     public class CreateUserDto

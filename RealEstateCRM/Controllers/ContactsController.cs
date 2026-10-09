@@ -25,7 +25,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var contacts = await _contactService.GetAllAsync();
-                return Ok(contacts);
+                return Ok(contacts.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -40,7 +40,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var contacts = await _contactService.SearchAsync(q, type);
-                return Ok(contacts);
+                return Ok(contacts.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -56,7 +56,7 @@ namespace RealEstateCRM.Controllers
             {
                 var contact = await _contactService.GetByIdAsync(id);
                 if (contact == null) return NotFound();
-                return Ok(contact);
+                return Ok(contact.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -73,7 +73,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var contact = await _contactService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = contact.Id }, contact);
+                return CreatedAtAction(nameof(GetById), new { id = contact.Id }, contact.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -91,7 +91,7 @@ namespace RealEstateCRM.Controllers
 
                 var contact = await _contactService.UpdateAsync(id, dto);
                 if (contact == null) return NotFound();
-                return Ok(contact);
+                return Ok(contact.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

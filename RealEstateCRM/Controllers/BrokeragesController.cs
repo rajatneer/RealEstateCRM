@@ -25,7 +25,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var brokerages = await _brokerageService.GetAllAsync(status);
-                return Ok(brokerages);
+                return Ok(brokerages.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -41,7 +41,7 @@ namespace RealEstateCRM.Controllers
             {
                 var brokerage = await _brokerageService.GetByIdAsync(id);
                 if (brokerage == null) return NotFound();
-                return Ok(brokerage);
+                return Ok(brokerage.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -58,7 +58,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var brokerage = await _brokerageService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = brokerage.Id }, brokerage);
+                return CreatedAtAction(nameof(GetById), new { id = brokerage.Id }, brokerage.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -76,7 +76,7 @@ namespace RealEstateCRM.Controllers
 
                 var brokerage = await _brokerageService.UpdateAsync(id, dto);
                 if (brokerage == null) return NotFound();
-                return Ok(brokerage);
+                return Ok(brokerage.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

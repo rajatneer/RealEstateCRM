@@ -5,13 +5,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RealEstateCRM.Models
 {
-    public class Brokerage : ITenantEntity
+    public class Brokerage : ITenantEntity, IOwnedEntity
     {
         [Key]
         public int Id { get; set; }
 
         [JsonIgnore]
         public int CompanyId { get; set; }
+
+        [JsonIgnore]
+        public int? AssignedUserId { get; set; }
 
         public int? LeadId { get; set; }
         public Lead? Lead { get; set; }

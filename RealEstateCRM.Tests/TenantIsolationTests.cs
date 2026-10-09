@@ -10,10 +10,16 @@ public class TenantIsolationTests
 {
     private sealed class FixedTenant : ITenantProvider
     {
-        public FixedTenant(int companyId) => CompanyId = companyId;
+        public FixedTenant(int companyId, int? userId = 1, string role = Roles.Owner)
+        {
+            CompanyId = companyId;
+            UserId = userId;
+            Role = role;
+        }
+
         public int CompanyId { get; }
-        public int? UserId => null;
-        public string? Role => null;
+        public int? UserId { get; }
+        public string? Role { get; }
     }
 
     private static (SqliteConnection Connection, DbContextOptions<CrmDbContext> Options) CreateDatabase()
@@ -95,5 +101,55 @@ public class TenantIsolationTests
 
         using var anonymous = new CrmDbContext(options, new FixedTenant(0));
         Assert.Empty(anonymous.Contacts.ToList());
+    }
+
+    private static Lead NewLead() => new() { ContactId = 1, Source = LeadSource.Website };
+
+    [Fact]
+    public void Agents_only_see_their_own_leads_but_owners_see_all()
+    {
+        var (connection, options) = CreateDatabase();
+        using var _ = connection;
+
+        using (var owner = new CrmDbContext(options, new FixedTenant(1, userId: 10, role: Roles.Owner)))
+        {
+            owner.Contacts.Add(NewContact("Shared"));
+            owner.SaveChanges();
+            owner.Leads.Add(NewLead());   // stamped AssignedUserId = 10
+            owner.SaveChanges();
+        }
+
+        using (var agent1 = new CrmDbContext(options, new FixedTenant(1, userId: 11, role: Roles.Agent)))
+        {
+            // Contacts are a shared company directory...
+            Assert.Single(agent1.Contacts.ToList());
+            // ...but the owner's lead is not visible to the agent.
+            Assert.Empty(agent1.Leads.ToList());
+            agent1.Leads.Add(NewLead());
+            agent1.SaveChanges();
+            Assert.Single(agent1.Leads.ToList());
+        }
+
+        using (var agent2 = new CrmDbContext(options, new FixedTenant(1, userId: 12, role: Roles.Agent)))
+            Assert.Empty(agent2.Leads.ToList());
+
+        using (var owner = new CrmDbContext(options, new FixedTenant(1, userId: 10, role: Roles.Owner)))
+            Assert.Equal(2, owner.Leads.Count());
+    }
+
+    [Fact]
+    public void Assigned_user_is_stamped_from_the_creator()
+    {
+        var (connection, options) = CreateDatabase();
+        using var _ = connection;
+
+        using var db = new CrmDbContext(options, new FixedTenant(1, userId: 42, role: Roles.Agent));
+        db.Contacts.Add(NewContact("C"));
+        db.SaveChanges();
+        var lead = NewLead();
+        db.Leads.Add(lead);
+        db.SaveChanges();
+
+        Assert.Equal(42, lead.AssignedUserId);
     }
 }

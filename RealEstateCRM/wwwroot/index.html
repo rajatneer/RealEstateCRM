@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="login-container" class="login-container" style="display:none">
-        <form id="login-form" class="login-form" onsubmit="return handleLogin(event)">
+        <form id="login-form" class="login-form" data-onsubmit="handleLogin(event)">
             <h2>Login</h2>
             <div class="form-group">
                 <label>Company Code</label>
@@ -43,7 +43,7 @@
             <li><a href="#" class="nav-link" data-page="calculator">&#129518; Calculator</a></li>
             <li><a href="#" class="nav-link" data-page="sitevisits">&#128205; Site Visits</a></li>
         </ul>
-        <button class="btn btn-secondary" style="margin:16px 0 0 16px;width:80%" onclick="logout()">Logout</button>
+        <button class="btn btn-secondary" style="margin:16px 0 0 16px;width:80%" data-onclick="logout()">Logout</button>
     </nav>
 
         <main class="content">
@@ -94,11 +94,11 @@
         <section id="page-contacts" class="page">
             <div class="page-header">
                 <h1>Contacts</h1>
-                <button class="btn btn-primary" onclick="showContactForm()">+ Add Contact</button>
+                <button class="btn btn-primary" data-onclick="showContactForm()">+ Add Contact</button>
             </div>
             <div class="search-bar">
-                <input type="text" id="contact-search" placeholder="Search by name, email, phone..." oninput="searchContacts()">
-                <select id="contact-type-filter" onchange="searchContacts()">
+                <input type="text" id="contact-search" placeholder="Search by name, email, phone..." data-oninput="searchContacts()">
+                <select id="contact-type-filter" data-onchange="searchContacts()">
                     <option value="">All Types</option>
                     <option value="Buyer">Buyer</option>
                     <option value="Seller">Seller</option>
@@ -116,11 +116,11 @@
         <section id="page-properties" class="page">
             <div class="page-header">
                 <h1>Properties</h1>
-                <button class="btn btn-primary" onclick="showPropertyForm()">+ Add Property</button>
+                <button class="btn btn-primary" data-onclick="showPropertyForm()">+ Add Property</button>
             </div>
             <div class="search-bar">
-                <input type="text" id="property-search" placeholder="Search by address, city, zip..." oninput="searchProperties()">
-                <select id="property-status-filter" onchange="searchProperties()">
+                <input type="text" id="property-search" placeholder="Search by address, city, zip..." data-oninput="searchProperties()">
+                <select id="property-status-filter" data-onchange="searchProperties()">
                     <option value="">All Statuses</option>
                     <option value="Available">Available</option>
                     <option value="UnderContract">Under Contract</option>
@@ -128,7 +128,7 @@
                     <option value="Rented">Rented</option>
                     <option value="OffMarket">Off Market</option>
                 </select>
-                <select id="property-type-filter" onchange="searchProperties()">
+                <select id="property-type-filter" data-onchange="searchProperties()">
                     <option value="">All Types</option>
                     <option value="House">House</option>
                     <option value="Apartment">Apartment</option>
@@ -137,9 +137,9 @@
                     <option value="Land">Land</option>
                     <option value="Commercial">Commercial</option>
                 </select>
-                <input type="number" id="property-min-price" placeholder="Min Price" oninput="searchProperties()">
-                <input type="number" id="property-max-price" placeholder="Max Price" oninput="searchProperties()">
-                <input type="number" id="property-min-beds" placeholder="Min Beds" min="0" oninput="searchProperties()">
+                <input type="number" id="property-min-price" placeholder="Min Price" data-oninput="searchProperties()">
+                <input type="number" id="property-max-price" placeholder="Max Price" data-oninput="searchProperties()">
+                <input type="number" id="property-min-beds" placeholder="Min Beds" min="0" data-oninput="searchProperties()">
             </div>
             <div id="properties-list" class="table-container">
                 <p class="empty-state">Loading...</p>
@@ -150,11 +150,11 @@
         <section id="page-leads" class="page">
             <div class="page-header">
                 <h1>Leads Pipeline</h1>
-                <button class="btn btn-primary" onclick="showLeadForm()">+ Add Lead</button>
+                <button class="btn btn-primary" data-onclick="showLeadForm()">+ Add Lead</button>
             </div>
             <div class="filter-bar">
                 <label>Filter by stage:</label>
-                <select id="lead-stage-filter" onchange="loadLeads()">
+                <select id="lead-stage-filter" data-onchange="loadLeads()">
                     <option value="">All</option>
                     <option value="New">New</option>
                     <option value="Contacted">Contacted</option>
@@ -175,11 +175,11 @@
         <section id="page-tasks" class="page">
             <div class="page-header">
                 <h1>Tasks &amp; Reminders</h1>
-                <button class="btn btn-primary" onclick="showTaskForm()">+ Add Task</button>
+                <button class="btn btn-primary" data-onclick="showTaskForm()">+ Add Task</button>
             </div>
             <div class="filter-bar">
                 <label>Filter:</label>
-                <select id="task-status-filter" onchange="loadTasks()">
+                <select id="task-status-filter" data-onchange="loadTasks()">
                     <option value="">All</option>
                     <option value="Pending">Pending</option>
                     <option value="InProgress">In Progress</option>
@@ -196,7 +196,7 @@
         <section id="page-interactions" class="page">
             <div class="page-header">
                 <h1>Interactions</h1>
-                <button class="btn btn-primary" onclick="showInteractionForm()">+ Log Interaction</button>
+                <button class="btn btn-primary" data-onclick="showInteractionForm()">+ Log Interaction</button>
             </div>
             <div id="interactions-list" class="table-container">
                 <p class="empty-state">Loading...</p>
@@ -207,11 +207,11 @@
         <section id="page-brokerages" class="page">
             <div class="page-header">
                 <h1>Brokerage Tracking</h1>
-                <button class="btn btn-primary" onclick="showBrokerageForm()">+ Add Brokerage</button>
+                <button class="btn btn-primary" data-onclick="showBrokerageForm()">+ Add Brokerage</button>
             </div>
             <div class="filter-bar">
                 <label>Payment Status:</label>
-                <select id="brokerage-status-filter" onchange="loadBrokerages()">
+                <select id="brokerage-status-filter" data-onchange="loadBrokerages()">
                     <option value="">All</option>
                     <option value="Pending">Pending</option>
                     <option value="PartiallyPaid">Partially Paid</option>
@@ -230,7 +230,7 @@
             <div class="calculator-grid">
                 <div class="calc-card">
                     <h2>EMI Calculator</h2>
-                    <form id="emi-form" onsubmit="calculateEmi(event)">
+                    <form id="emi-form" data-onsubmit="calculateEmi(event)">
                         <div class="form-group">
                             <label>Loan Amount (&#8377;) *</label>
                             <input name="loanAmount" type="number" min="1" step="1" required placeholder="e.g. 5000000">
@@ -249,7 +249,7 @@
                 </div>
                 <div class="calc-card">
                     <h2>Stamp Duty Calculator</h2>
-                    <form id="stampduty-form" onsubmit="calculateStampDuty(event)">
+                    <form id="stampduty-form" data-onsubmit="calculateStampDuty(event)">
                         <div class="form-group">
                             <label>Property Value (&#8377;) *</label>
                             <input name="propertyValue" type="number" min="1" step="1" required placeholder="e.g. 7500000">
@@ -271,11 +271,11 @@
         <section id="page-sitevisits" class="page">
             <div class="page-header">
                 <h1>Site Visits</h1>
-                <button class="btn btn-primary" onclick="showSiteVisitForm()">+ Schedule Visit</button>
+                <button class="btn btn-primary" data-onclick="showSiteVisitForm()">+ Schedule Visit</button>
             </div>
             <div class="filter-bar">
                 <label>Status:</label>
-                <select id="sitevisit-status-filter" onchange="loadSiteVisits()">
+                <select id="sitevisit-status-filter" data-onchange="loadSiteVisits()">
                     <option value="">All</option>
                     <option value="Scheduled">Scheduled</option>
                     <option value="Confirmed">Confirmed</option>
@@ -292,11 +292,11 @@
     </div>
 
     <!-- Modal -->
-    <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
-        <div class="modal" onclick="event.stopPropagation()">
+    <div id="modal-overlay" class="modal-overlay" data-onclick="closeModal()">
+        <div class="modal" data-onclick="stopPropagation()">
             <div class="modal-header">
                 <h2 id="modal-title">Form</h2>
-                <button class="btn-close" onclick="closeModal()">&times;</button>
+                <button class="btn-close" data-onclick="closeModal()">&times;</button>
             </div>
             <div id="modal-body" class="modal-body"></div>
         </div>
@@ -305,6 +305,7 @@
     <!-- Toast -->
     <div id="toast" class="toast"></div>
 
+    <script src="js/events.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>

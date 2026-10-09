@@ -9,6 +9,15 @@ namespace RealEstateCRM.Tenancy
         int CompanyId { get; set; }
     }
 
+    /// <summary>
+    /// Records that belong to one user (an agent). Agents only see their own; Owners see everything in the company.
+    /// Set to the creator on insert and changed only through an explicit assignment.
+    /// </summary>
+    public interface IOwnedEntity
+    {
+        int? AssignedUserId { get; set; }
+    }
+
     /// <summary>Resolves the current caller's company from the authenticated principal.</summary>
     public interface ITenantProvider
     {

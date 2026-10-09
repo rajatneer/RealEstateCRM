@@ -16,7 +16,10 @@ site visits, brokerage/GST tracking, and EMI / stamp-duty calculators. Static JS
 | Validation | Attributes absent from DTOs | Range / length / enum checks on every DTO (invalid input returns 400) |
 | Lists | Unbounded | `?page=&pageSize=` (default 500, max 1000), total in `X-Total-Count` header |
 | Errors | try/catch + plain-text 500s | One global handler returning RFC 7807 ProblemDetails |
-| Roles | None | `Owner` and `Agent`; only Owners can create users |
+| Roles | None | `Owner` and `Agent`; Owners manage users and see everything, Agents only see leads, tasks, interactions, site visits and brokerage they own (contacts and properties are a shared company directory) |
+| API output | Raw database entities | Response DTOs; internal columns (`CompanyId`, `AssignedUserId`) never leave the server |
+| Disabled users | Token valid for 8 hours | Checked on every request (30 s cache); disabling a user or changing a password signs them out immediately |
+| CSP | None | `script-src 'self'` (no inline scripts); the frontend uses CSP-safe event delegation (`js/events.js`) |
 | Database | SQLite only | SQLite (dev) or PostgreSQL (`DATABASE_URL`) |
 | Tests / CI | None | xUnit unit + integration tests, GitHub Actions workflow |
 
@@ -76,9 +79,17 @@ dotnet test
 Covers password hashing (including legacy upgrade), EMI / stamp-duty maths, database URL parsing, tenant isolation at the
 DbContext level, and API integration (401 without a token, validation, paging header, cross-company access, owner-only user creation).
 
+## Managing users and assignments (Owner)
+
+- `GET /api/auth/users` list users; `POST /api/auth/users` create; `PUT /api/auth/users/{id}/active` `{ "isActive": false }` disable/enable.
+- `PUT /api/leads/{id}/assign` `{ "userId": 12 }` hands a lead to an agent. Related tasks, interactions, site visits and brokerage keep their current owner.
+- `POST /api/auth/change-password` returns a fresh token (all other sessions are signed out).
+
+There is no screen for these yet; call them with any HTTP client using the Owner's bearer token.
+
 ## Known limitations / next steps
 
-- Agents currently see all data within their own company (no per-agent lead ownership yet).
-- Entities are still returned directly from the API (tenant `CompanyId` is hidden from JSON); response DTOs are the next cleanup.
-- A disabled user keeps a valid token until it expires (default 8 hours).
-- No Content-Security-Policy yet: `index.html` uses inline event handlers.
+- Assigning a lead does not move its related tasks, interactions, site visits or brokerage rows to the agent.
+- `style-src` still allows `'unsafe-inline'` because the markup uses inline `style` attributes (scripts are strict).
+- Sign-out checks are cached for 30 seconds per server instance.
+- No UI yet for user management or lead assignment.

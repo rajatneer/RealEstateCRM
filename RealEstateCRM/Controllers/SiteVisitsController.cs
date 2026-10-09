@@ -25,7 +25,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var visits = await _siteVisitService.GetAllAsync(status);
-                return Ok(visits);
+                return Ok(visits.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -40,7 +40,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var visits = await _siteVisitService.GetUpcomingAsync();
-                return Ok(visits);
+                return Ok(visits.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -56,7 +56,7 @@ namespace RealEstateCRM.Controllers
             {
                 var visit = await _siteVisitService.GetByIdAsync(id);
                 if (visit == null) return NotFound();
-                return Ok(visit);
+                return Ok(visit.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -73,7 +73,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var visit = await _siteVisitService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = visit.Id }, visit);
+                return CreatedAtAction(nameof(GetById), new { id = visit.Id }, visit.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -91,7 +91,7 @@ namespace RealEstateCRM.Controllers
 
                 var visit = await _siteVisitService.UpdateAsync(id, dto);
                 if (visit == null) return NotFound();
-                return Ok(visit);
+                return Ok(visit.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

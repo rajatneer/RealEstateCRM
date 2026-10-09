@@ -24,7 +24,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var interactions = await _interactionService.GetAllAsync(contactId, propertyId);
-                return Ok(interactions);
+                return Ok(interactions.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -40,7 +40,7 @@ namespace RealEstateCRM.Controllers
             {
                 var interaction = await _interactionService.GetByIdAsync(id);
                 if (interaction == null) return NotFound();
-                return Ok(interaction);
+                return Ok(interaction.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -57,7 +57,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var interaction = await _interactionService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = interaction.Id }, interaction);
+                return CreatedAtAction(nameof(GetById), new { id = interaction.Id }, interaction.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

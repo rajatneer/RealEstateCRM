@@ -25,7 +25,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var tasks = await _taskService.GetAllAsync(status);
-                return Ok(tasks);
+                return Ok(tasks.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -40,7 +40,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var tasks = await _taskService.GetOverdueAsync();
-                return Ok(tasks);
+                return Ok(tasks.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -56,7 +56,7 @@ namespace RealEstateCRM.Controllers
             {
                 var task = await _taskService.GetByIdAsync(id);
                 if (task == null) return NotFound();
-                return Ok(task);
+                return Ok(task.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -73,7 +73,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var task = await _taskService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+                return CreatedAtAction(nameof(GetById), new { id = task.Id }, task.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -91,7 +91,7 @@ namespace RealEstateCRM.Controllers
 
                 var task = await _taskService.UpdateAsync(id, dto);
                 if (task == null) return NotFound();
-                return Ok(task);
+                return Ok(task.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

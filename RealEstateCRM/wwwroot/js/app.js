@@ -215,8 +215,8 @@ function renderContacts() {
             <td><span class="${badgeClass(c.type)}">${escapeHtml(c.type)}</span></td>
             <td>${formatDate(c.createdAt)}</td>
             <td class="actions">
-                <button class="btn btn-sm btn-edit" onclick="editContact(${c.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteContact(${c.id})">Delete</button>
+                <button class="btn btn-sm btn-edit" data-onclick="editContact(${c.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteContact(${c.id})">Delete</button>
             </td>
         </tr>`).join('')}</tbody>
     </table>`;
@@ -224,7 +224,7 @@ function renderContacts() {
 
 function contactFormHtml(c = null) {
     return `
-    <form id="contact-form" onsubmit="saveContact(event, ${c ? c.id : 'null'})">
+    <form id="contact-form" data-onsubmit="saveContact(event, ${c ? c.id : 'null'})">
         <div class="form-row">
             <div class="form-group">
                 <label>First Name *</label>
@@ -258,7 +258,7 @@ function contactFormHtml(c = null) {
             <textarea name="notes" maxlength="500">${c ? escapeHtml(c.notes || '') : ''}</textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${c ? 'Update' : 'Create'}</button>
         </div>
     </form>`;
@@ -364,8 +364,8 @@ function renderProperties() {
             <td>${p.bedrooms}/${p.bathrooms}</td>
             <td>${p.owner ? escapeHtml(p.owner.firstName + ' ' + p.owner.lastName) : '-'}</td>
             <td class="actions">
-                <button class="btn btn-sm btn-edit" onclick="editProperty(${p.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                <button class="btn btn-sm btn-edit" data-onclick="editProperty(${p.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteProperty(${p.id})">Delete</button>
             </td>
         </tr>`).join('')}</tbody>
     </table>`;
@@ -373,7 +373,7 @@ function renderProperties() {
 
 function propertyFormHtml(p = null) {
     return `
-    <form id="property-form" onsubmit="saveProperty(event, ${p ? p.id : 'null'})">
+    <form id="property-form" data-onsubmit="saveProperty(event, ${p ? p.id : 'null'})">
         <div class="form-group">
             <label>Address *</label>
             <input name="address" required maxlength="300" value="${p ? escapeHtml(p.address) : ''}">
@@ -443,7 +443,7 @@ function propertyFormHtml(p = null) {
             <textarea name="description" maxlength="1000">${p ? escapeHtml(p.description || '') : ''}</textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${p ? 'Update' : 'Create'}</button>
         </div>
     </form>`;
@@ -546,7 +546,7 @@ function renderInteractions(interactions) {
             <td>${i.property ? escapeHtml(i.property.address) : '-'}</td>
             <td>${escapeHtml(i.description ? i.description.substring(0, 100) : '')}</td>
             <td class="actions">
-                <button class="btn btn-sm btn-danger" onclick="deleteInteraction(${i.id})">Delete</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteInteraction(${i.id})">Delete</button>
             </td>
         </tr>`).join('')}</tbody>
     </table>`;
@@ -554,7 +554,7 @@ function renderInteractions(interactions) {
 
 function interactionFormHtml() {
     return `
-    <form id="interaction-form" onsubmit="saveInteraction(event)">
+    <form id="interaction-form" data-onsubmit="saveInteraction(event)">
         <div class="form-row">
             <div class="form-group">
                 <label>Contact *</label>
@@ -588,7 +588,7 @@ function interactionFormHtml() {
             <textarea name="description" required maxlength="2000"></textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">Log Interaction</button>
         </div>
     </form>`;
@@ -679,7 +679,7 @@ function renderLeadsPipeline(leads) {
         return `<div class="pipeline-column stage-${stage.toLowerCase()}">
             <h3>${stage} <span class="pipeline-count">${stageLeads.length}</span></h3>
             ${stageLeads.length === 0 ? '<p style="font-size:12px;color:#94a3b8;text-align:center;">No leads</p>' : ''}
-            ${stageLeads.map(l => `<div class="pipeline-card" onclick="editLead(${l.id})" style="cursor:pointer">
+            ${stageLeads.map(l => `<div class="pipeline-card" data-onclick="editLead(${l.id})" style="cursor:pointer">
                 <div class="card-name">${l.contact ? escapeHtml(l.contact.firstName + ' ' + l.contact.lastName) : 'Unknown'}</div>
                 ${l.estimatedValue ? `<div class="card-value">${formatPrice(l.estimatedValue)}</div>` : ''}
                 <div class="card-source">${escapeHtml(l.source)}</div>
@@ -704,8 +704,8 @@ function renderLeadsTable(leads) {
             <td class="price">${l.estimatedValue ? formatPrice(l.estimatedValue) : '-'}</td>
             <td>${formatDate(l.updatedAt)}</td>
             <td class="actions">
-                <button class="btn btn-sm btn-edit" onclick="editLead(${l.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteLead(${l.id})">Delete</button>
+                <button class="btn btn-sm btn-edit" data-onclick="editLead(${l.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteLead(${l.id})">Delete</button>
             </td>
         </tr>`).join('')}</tbody>
     </table>`;
@@ -713,7 +713,7 @@ function renderLeadsTable(leads) {
 
 function leadFormHtml(l = null) {
     return `
-    <form id="lead-form" onsubmit="saveLead(event, ${l ? l.id : 'null'})">
+    <form id="lead-form" data-onsubmit="saveLead(event, ${l ? l.id : 'null'})">
         <div class="form-row">
             <div class="form-group">
                 <label>Contact *</label>
@@ -755,7 +755,7 @@ function leadFormHtml(l = null) {
             <textarea name="notes" maxlength="1000">${l ? escapeHtml(l.notes || '') : ''}</textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${l ? 'Update' : 'Create'}</button>
         </div>
     </form>`;
@@ -886,10 +886,10 @@ function renderTasks(tasks) {
                 <td><span class="${badgeClass(t.status)}">${escapeHtml(t.status)}</span></td>
                 <td>${t.contact ? escapeHtml(t.contact.firstName + ' ' + t.contact.lastName) : '-'}</td>
                 <td class="actions">
-                    ${t.status === 'Pending' ? `<button class="btn btn-sm btn-primary" onclick="markTaskStatus(${t.id}, 'InProgress')">Start</button>` : ''}
-                    ${t.status === 'InProgress' ? `<button class="btn btn-sm btn-primary" onclick="markTaskStatus(${t.id}, 'Completed')">Done</button>` : ''}
-                    <button class="btn btn-sm btn-edit" onclick="editTask(${t.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">Delete</button>
+                    ${t.status === 'Pending' ? `<button class="btn btn-sm btn-primary" data-onclick="markTaskStatus(${t.id}, 'InProgress')">Start</button>` : ''}
+                    ${t.status === 'InProgress' ? `<button class="btn btn-sm btn-primary" data-onclick="markTaskStatus(${t.id}, 'Completed')">Done</button>` : ''}
+                    <button class="btn btn-sm btn-edit" data-onclick="editTask(${t.id})">Edit</button>
+                    <button class="btn btn-sm btn-danger" data-onclick="deleteTask(${t.id})">Delete</button>
                 </td>
             </tr>`;
         }).join('')}</tbody>
@@ -898,7 +898,7 @@ function renderTasks(tasks) {
 
 function taskFormHtml(t = null) {
     return `
-    <form id="task-form" onsubmit="saveTask(event, ${t ? t.id : 'null'})">
+    <form id="task-form" data-onsubmit="saveTask(event, ${t ? t.id : 'null'})">
         <div class="form-group">
             <label>Title *</label>
             <input name="title" required maxlength="200" value="${t ? escapeHtml(t.title) : ''}">
@@ -950,7 +950,7 @@ function taskFormHtml(t = null) {
             </select>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${t ? 'Update' : 'Create'}</button>
         </div>
     </form>`;
@@ -1128,8 +1128,8 @@ function renderBrokerages(brokerages) {
             <td>${b.subBrokerName ? `${escapeHtml(b.subBrokerName)} (${b.subBrokerSplitPercent}% = ${formatPrice(b.subBrokerAmount || 0)})` : '-'}</td>
             <td><span class="${badgeClass(b.paymentStatus)}">${escapeHtml(b.paymentStatus)}</span></td>
             <td class="actions">
-                <button class="btn btn-sm btn-edit" onclick="editBrokerage(${b.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteBrokerage(${b.id})">Delete</button>
+                <button class="btn btn-sm btn-edit" data-onclick="editBrokerage(${b.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteBrokerage(${b.id})">Delete</button>
             </td>
         </tr>`).join('')}</tbody>
     </table>`;
@@ -1137,7 +1137,7 @@ function renderBrokerages(brokerages) {
 
 function brokerageFormHtml(b = null) {
     return `
-    <form id="brokerage-form" onsubmit="saveBrokerage(event, ${b ? b.id : 'null'})">
+    <form id="brokerage-form" data-onsubmit="saveBrokerage(event, ${b ? b.id : 'null'})">
         <div class="form-row">
             <div class="form-group">
                 <label>Lead</label>
@@ -1179,7 +1179,7 @@ function brokerageFormHtml(b = null) {
             <textarea name="notes" maxlength="1000">${b ? escapeHtml(b.notes || '') : ''}</textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${b ? 'Update' : 'Create'}</button>
         </div>
     </form>`;
@@ -1340,10 +1340,10 @@ function renderSiteVisits(visits) {
                 <td>${escapeHtml(v.pickupLocation) || '-'}</td>
                 <td>${escapeHtml(v.feedback ? v.feedback.substring(0, 60) : '') || '-'}</td>
                 <td class="actions">
-                    ${v.status === 'Scheduled' ? `<button class="btn btn-sm btn-primary" onclick="updateSiteVisitStatus(${v.id}, 'Confirmed')">Confirm</button>` : ''}
-                    ${v.status === 'Confirmed' ? `<button class="btn btn-sm btn-primary" onclick="updateSiteVisitStatus(${v.id}, 'Completed')">Done</button>` : ''}
-                    <button class="btn btn-sm btn-edit" onclick="editSiteVisit(${v.id})">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteSiteVisit(${v.id})">Delete</button>
+                    ${v.status === 'Scheduled' ? `<button class="btn btn-sm btn-primary" data-onclick="updateSiteVisitStatus(${v.id}, 'Confirmed')">Confirm</button>` : ''}
+                    ${v.status === 'Confirmed' ? `<button class="btn btn-sm btn-primary" data-onclick="updateSiteVisitStatus(${v.id}, 'Completed')">Done</button>` : ''}
+                    <button class="btn btn-sm btn-edit" data-onclick="editSiteVisit(${v.id})">Edit</button>
+                    <button class="btn btn-sm btn-danger" data-onclick="deleteSiteVisit(${v.id})">Delete</button>
                 </td>
             </tr>`;
         }).join('')}</tbody>
@@ -1352,7 +1352,7 @@ function renderSiteVisits(visits) {
 
 function siteVisitFormHtml(v = null) {
     return `
-    <form id="sitevisit-form" onsubmit="saveSiteVisit(event, ${v ? v.id : 'null'})">
+    <form id="sitevisit-form" data-onsubmit="saveSiteVisit(event, ${v ? v.id : 'null'})">
         <div class="form-row">
             <div class="form-group">
                 <label>Contact *</label>
@@ -1388,7 +1388,7 @@ function siteVisitFormHtml(v = null) {
             <textarea name="notes" maxlength="1000">${v ? escapeHtml(v.notes || '') : ''}</textarea>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" data-onclick="closeModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">${v ? 'Update' : 'Schedule'}</button>
         </div>
     </form>`;

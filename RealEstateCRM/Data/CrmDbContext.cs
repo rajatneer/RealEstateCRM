@@ -16,6 +16,8 @@ namespace RealEstateCRM.Data
 
         /// <summary>Read by the global query filters; re-evaluated for every query on this context instance.</summary>
         public int CurrentCompanyId => _tenant.CompanyId;
+        public int? CurrentUserId => _tenant.UserId;
+        public bool CurrentIsOwner => _tenant.Role == Roles.Owner;
 
         public DbSet<Contact> Contacts => Set<Contact>();
         public DbSet<Property> Properties => Set<Property>();
@@ -55,6 +57,8 @@ namespace RealEstateCRM.Data
                     if (CurrentCompanyId == 0)
                         throw new InvalidOperationException("Cannot save tenant data without an authenticated company.");
                     entry.Entity.CompanyId = CurrentCompanyId;
+                    if (entry.Entity is IOwnedEntity owned && owned.AssignedUserId == null)
+                        owned.AssignedUserId = CurrentUserId;
                 }
                 else if (entry.State == EntityState.Modified)
                 {
@@ -90,12 +94,13 @@ namespace RealEstateCRM.Data
             // ── Tenant isolation: every business table is filtered by the caller's company ──
             modelBuilder.Entity<Contact>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
             modelBuilder.Entity<Property>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
-            modelBuilder.Entity<Interaction>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
-            modelBuilder.Entity<Lead>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
-            modelBuilder.Entity<CrmTask>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
-            modelBuilder.Entity<Brokerage>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
-            modelBuilder.Entity<SiteVisit>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
+            modelBuilder.Entity<Interaction>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
+            modelBuilder.Entity<Lead>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
+            modelBuilder.Entity<CrmTask>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
+            modelBuilder.Entity<Brokerage>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
+            modelBuilder.Entity<SiteVisit>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
 
+            modelBuilder.Entity<Lead>().HasIndex(e => e.AssignedUserId);
             modelBuilder.Entity<Contact>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<Property>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<Interaction>().HasIndex(e => e.CompanyId);

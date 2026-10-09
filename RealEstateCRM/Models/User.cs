@@ -33,6 +33,9 @@ namespace RealEstateCRM.Models
 
         public bool IsActive { get; set; } = true;
 
+        /// <summary>Embedded in each JWT; bumping it signs the user out everywhere.</summary>
+        public int TokenVersion { get; set; }
+
         public int FailedLoginCount { get; set; }
         public DateTime? LockoutEnd { get; set; }
     }

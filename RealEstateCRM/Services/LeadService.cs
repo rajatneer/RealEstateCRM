@@ -16,6 +16,7 @@ namespace RealEstateCRM.Services
         Task<Lead> CreateAsync(LeadCreateDto dto);
         Task<Lead?> UpdateAsync(int id, LeadUpdateDto dto);
         Task<bool> DeleteAsync(int id);
+        Task<Lead?> AssignAsync(int leadId, int userId);
     }
 
     public class LeadService : ILeadService
@@ -157,6 +158,27 @@ namespace RealEstateCRM.Services
                 _logger.LogError(ex, "Database error deleting lead {LeadId}", id);
                 throw;
             }
+        }
+
+        public async Task<Lead?> AssignAsync(int leadId, int userId)
+        {
+            var lead = await _context.Leads
+                .Include(l => l.Contact)
+                .Include(l => l.Property)
+                .FirstOrDefaultAsync(l => l.Id == leadId);
+            if (lead == null) return null;
+
+            var companyId = _context.CurrentCompanyId;
+            var userOk = await _context.Users.AnyAsync(u => u.Id == userId && u.CompanyId == companyId && u.IsActive);
+            if (!userOk)
+                throw new BadRequestException($"User {userId} was not found or is inactive.");
+
+            lead.AssignedUserId = userId;
+            lead.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Assigned lead {LeadId} to user {UserId}", leadId, userId);
+            return lead;
         }
 
         public async Task<List<TimelineEntryDto>?> GetTimelineAsync(int leadId)

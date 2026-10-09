@@ -25,7 +25,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var properties = await _propertyService.GetAllAsync(status);
-                return Ok(properties);
+                return Ok(properties.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -46,7 +46,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var properties = await _propertyService.SearchAsync(q, type, status, minPrice, maxPrice, minBeds);
-                return Ok(properties);
+                return Ok(properties.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -62,7 +62,7 @@ namespace RealEstateCRM.Controllers
             {
                 var property = await _propertyService.GetByIdAsync(id);
                 if (property == null) return NotFound();
-                return Ok(property);
+                return Ok(property.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -79,7 +79,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var property = await _propertyService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = property.Id }, property);
+                return CreatedAtAction(nameof(GetById), new { id = property.Id }, property.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -97,7 +97,7 @@ namespace RealEstateCRM.Controllers
 
                 var property = await _propertyService.UpdateAsync(id, dto);
                 if (property == null) return NotFound();
-                return Ok(property);
+                return Ok(property.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {

@@ -58,6 +58,24 @@ builder.Services
             NameClaimType = "name",
             RoleClaimType = "role"
         };
+
+        // Reject tokens of users who were disabled, deleted or signed out since the token was issued.
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal;
+                var validator = context.HttpContext.RequestServices.GetRequiredService<IUserSessionValidator>();
+
+                if (!int.TryParse(principal?.FindFirst("sub")?.Value, out var userId) ||
+                    !int.TryParse(principal?.FindFirst("companyId")?.Value, out var companyId) ||
+                    !int.TryParse(principal?.FindFirst("ver")?.Value, out var version) ||
+                    !await validator.IsValidAsync(userId, companyId, version))
+                {
+                    context.Fail("The session is no longer valid.");
+                }
+            }
+        };
     });
 
 // Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous].
@@ -97,7 +115,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, HttpTenantProvider>();
 builder.Services.AddScoped<IPagingContext, HttpPagingContext>();
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IUserSessionValidator, UserSessionValidator>();
 
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IPropertyService, PropertyService>();
@@ -130,6 +150,11 @@ app.Use(async (context, next) =>
     headers["X-Content-Type-Options"] = "nosniff";
     headers["X-Frame-Options"] = "DENY";
     headers["Referrer-Policy"] = "no-referrer";
+    // Scripts only from our own origin (the frontend has no inline scripts or handlers).
+    // Inline style attributes are still used by the markup, hence 'unsafe-inline' for styles only.
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; " +
+        "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     await next();
 });
 

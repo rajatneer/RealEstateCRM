@@ -42,7 +42,8 @@ namespace RealEstateCRM.Security
                     new Claim("sub", user.Id.ToString()),
                     new Claim("name", user.Username),
                     new Claim("companyId", company.Id.ToString()),
-                    new Claim("role", user.Role)
+                    new Claim("role", user.Role),
+                    new Claim("ver", user.TokenVersion.ToString())
                 }),
                 Expires = expires,
                 Issuer = _settings.Issuer,

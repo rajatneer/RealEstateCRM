@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Models;
@@ -41,7 +42,7 @@ namespace RealEstateCRM.Controllers
             try
             {
                 var leads = await _leadService.GetAllAsync(stage);
-                return Ok(leads);
+                return Ok(leads.Select(x => x.ToDto()));
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -57,7 +58,7 @@ namespace RealEstateCRM.Controllers
             {
                 var lead = await _leadService.GetByIdAsync(id);
                 if (lead == null) return NotFound();
-                return Ok(lead);
+                return Ok(lead.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -74,7 +75,7 @@ namespace RealEstateCRM.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var lead = await _leadService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = lead.Id }, lead);
+                return CreatedAtAction(nameof(GetById), new { id = lead.Id }, lead.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
@@ -92,13 +93,23 @@ namespace RealEstateCRM.Controllers
 
                 var lead = await _leadService.UpdateAsync(id, dto);
                 if (lead == null) return NotFound();
-                return Ok(lead);
+                return Ok(lead.ToDto());
             }
             catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating lead {LeadId}", id);
                 return StatusCode(500, "An error occurred while updating the lead.");
             }
+        }
+
+        /// <summary>Owner-only: hand a lead to an agent. The agent can then see and work on it.</summary>
+        [Authorize(Roles = Roles.Owner)]
+        [HttpPut("{id}/assign")]
+        public async Task<IActionResult> Assign(int id, [FromBody] AssignDto dto)
+        {
+            var lead = await _leadService.AssignAsync(id, dto.UserId);
+            if (lead == null) return NotFound();
+            return Ok(lead.ToDto());
         }
 
         [HttpDelete("{id}")]

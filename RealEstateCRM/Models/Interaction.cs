@@ -4,13 +4,16 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RealEstateCRM.Models
 {
-    public class Interaction : ITenantEntity
+    public class Interaction : ITenantEntity, IOwnedEntity
     {
         [Key]
         public int Id { get; set; }
 
         [JsonIgnore]
         public int CompanyId { get; set; }
+
+        [JsonIgnore]
+        public int? AssignedUserId { get; set; }
 
         [Required]
         public int ContactId { get; set; }

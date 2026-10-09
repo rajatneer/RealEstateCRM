@@ -181,4 +181,71 @@ public class ApiIntegrationTests : IClassFixture<CrmFactory>
             new { username = "agent2", password = "Agent-Passw0rd!", role = "Agent" });
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
     }
+
+    [Fact]
+    public async Task Responses_do_not_expose_internal_columns()
+    {
+        var client = await _factory.CreateAuthenticatedClientAsync("Acme", "owner", CrmFactory.AcmePassword);
+        var created = await client.PostAsJsonAsync("/api/contacts", NewContact("Hidden"));
+        var raw = await created.Content.ReadAsStringAsync();
+
+        Assert.DoesNotContain("companyId", raw, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("assignedUserId", raw, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Disabling_a_user_invalidates_their_existing_token()
+    {
+        var owner = await _factory.CreateAuthenticatedClientAsync("Acme", "owner", CrmFactory.AcmePassword);
+        var created = await owner.PostAsJsonAsync("/api/auth/users",
+            new { username = "temp", password = "Temp-Passw0rd!!", role = "Agent" });
+        var userId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        var temp = await _factory.CreateAuthenticatedClientAsync("Acme", "temp", "Temp-Passw0rd!!");
+        Assert.Equal(HttpStatusCode.OK, (await temp.GetAsync("/api/contacts")).StatusCode);
+
+        var disable = await owner.PutAsJsonAsync($"/api/auth/users/{userId}/active", new { isActive = false });
+        Assert.Equal(HttpStatusCode.OK, disable.StatusCode);
+
+        // Same token, now rejected immediately.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await temp.GetAsync("/api/contacts")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Owner_can_assign_a_lead_to_an_agent_who_could_not_see_it_before()
+    {
+        var owner = await _factory.CreateAuthenticatedClientAsync("Acme", "owner", CrmFactory.AcmePassword);
+
+        var agentCreated = await owner.PostAsJsonAsync("/api/auth/users",
+            new { username = "agent-assign", password = "Agent-Passw0rd!", role = "Agent" });
+        var agentId = (await agentCreated.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+        var agent = await _factory.CreateAuthenticatedClientAsync("Acme", "agent-assign", "Agent-Passw0rd!");
+
+        var contact = await owner.PostAsJsonAsync("/api/contacts", NewContact("LeadOwner"));
+        var contactId = (await contact.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+        var lead = await owner.PostAsJsonAsync("/api/leads", new { contactId, stage = "New", source = "Website" });
+        Assert.Equal(HttpStatusCode.Created, lead.StatusCode);
+        var leadId = (await lead.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        Assert.Equal(HttpStatusCode.NotFound, (await agent.GetAsync($"/api/leads/{leadId}")).StatusCode);
+
+        // Agents cannot assign; owners can.
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await agent.PutAsJsonAsync($"/api/leads/{leadId}/assign", new { userId = agentId })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await owner.PutAsJsonAsync($"/api/leads/{leadId}/assign", new { userId = agentId })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await agent.GetAsync($"/api/leads/{leadId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Security_headers_include_a_content_security_policy()
+    {
+        var response = await _factory.CreateClient().GetAsync("/healthz");
+
+        Assert.True(response.Headers.TryGetValues("Content-Security-Policy", out var values));
+        var csp = string.Join(";", values!);
+        Assert.Contains("script-src 'self'", csp);
+        Assert.DoesNotContain("script-src 'self' 'unsafe-inline'", csp);
+    }
 }
