@@ -731,3 +731,8 @@ tr:hover {
     font-weight: 700;
     color: var(--primary);
 }
+
+.badge-planning, .badge-inprogress { background: #dbeafe; color: #1e40af; }
+.badge-approvals { background: #fef3c7; color: #92400e; }
+.badge-underconstruction { background: #ede9fe; color: #5b21b6; }
+.badge-onhold, .badge-cancelled { background: #e5e7eb; color: #374151; }

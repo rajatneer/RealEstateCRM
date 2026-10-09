@@ -42,6 +42,7 @@
             <li><a href="#" class="nav-link" data-page="brokerages">&#128176; Brokerage</a></li>
             <li><a href="#" class="nav-link" data-page="calculator">&#129518; Calculator</a></li>
             <li><a href="#" class="nav-link" data-page="sitevisits">&#128205; Site Visits</a></li>
+            <li><a href="#" class="nav-link" data-page="projects">&#127969; Projects</a></li>
         </ul>
         <button class="btn btn-secondary" style="margin:16px 0 0 16px;width:80%" data-onclick="logout()">Logout</button>
     </nav>
@@ -285,6 +286,22 @@
                 </select>
             </div>
             <div id="sitevisits-list" class="table-container">
+                <p class="empty-state">Loading...</p>
+            </div>
+        </section>
+
+        <!-- Projects -->
+        <section id="page-projects" class="page">
+            <div class="page-header">
+                <h1>Projects</h1>
+                <button class="btn btn-primary" data-onclick="showProjectForm()">+ New Project</button>
+            </div>
+            <h3>Upcoming &amp; overdue deadlines (next 30 days)</h3>
+            <div id="project-deadlines" class="table-container">
+                <p class="empty-state">Loading...</p>
+            </div>
+            <h3>All projects</h3>
+            <div id="projects-list" class="table-container">
                 <p class="empty-state">Loading...</p>
             </div>
         </section>

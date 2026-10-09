@@ -26,6 +26,8 @@ namespace RealEstateCRM.Data
         public DbSet<CrmTask> CrmTasks => Set<CrmTask>();
         public DbSet<Brokerage> Brokerages => Set<Brokerage>();
         public DbSet<SiteVisit> SiteVisits => Set<SiteVisit>();
+        public DbSet<Project> Projects => Set<Project>();
+        public DbSet<ProjectMilestone> ProjectMilestones => Set<ProjectMilestone>();
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<User> Users => Set<User>();
 
@@ -101,6 +103,21 @@ namespace RealEstateCRM.Data
             modelBuilder.Entity<SiteVisit>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
 
             modelBuilder.Entity<Lead>().HasIndex(e => e.AssignedUserId);
+            modelBuilder.Entity<Project>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
+            modelBuilder.Entity<ProjectMilestone>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
+
+            modelBuilder.Entity<Project>().HasIndex(e => e.CompanyId);
+            modelBuilder.Entity<ProjectMilestone>(entity =>
+            {
+                entity.HasIndex(m => m.CompanyId);
+                entity.HasIndex(m => m.PlannedDate);
+                entity.HasIndex(m => m.Status);
+                entity.HasOne(m => m.Project)
+                      .WithMany(p => p.Milestones)
+                      .HasForeignKey(m => m.ProjectId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<Contact>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<Property>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<Interaction>().HasIndex(e => e.CompanyId);

@@ -126,6 +126,7 @@ builder.Services.AddScoped<ILeadService, LeadService>();
 builder.Services.AddScoped<ICrmTaskService, CrmTaskService>();
 builder.Services.AddScoped<IBrokerageService, BrokerageService>();
 builder.Services.AddScoped<ISiteVisitService, SiteVisitService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddSingleton<ICalculatorService, CalculatorService>();
 
 builder.Services.AddControllers()

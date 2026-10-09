@@ -73,6 +73,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
         if (page === 'brokerages') loadBrokerages();
         if (page === 'calculator') loadCalculatorPage();
         if (page === 'sitevisits') loadSiteVisits();
+        if (page === 'projects') loadProjects();
     });
 });
 
@@ -1472,4 +1473,222 @@ async function deleteSiteVisit(id) {
     if (!confirm('Delete this site visit?')) return;
     try { await apiDelete(`/sitevisits/${id}`); showToast('Site visit deleted'); loadSiteVisits(); }
     catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+
+// ══════════════════════════════════════════
+// ── Projects & Milestones ──
+// ══════════════════════════════════════════
+const PROJECT_STATUSES = ['Planning', 'Approvals', 'UnderConstruction', 'Completed', 'OnHold'];
+const MILESTONE_CATEGORIES = ['Agreement', 'Registry', 'Approval', 'Construction', 'Other'];
+const MILESTONE_STATUSES = ['Pending', 'InProgress', 'Completed', 'Cancelled'];
+
+function spaced(v) { return String(v || '').replace(/([a-z])([A-Z])/g, '$1 $2'); }
+function fmtDay(d) {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+function dayInput(d) { return d ? String(d).substring(0, 10) : ''; }
+function dayToIso(v) { return v ? v + 'T00:00:00Z' : null; }
+function optionsHtml(list, selected) {
+    return list.map(x => `<option value="${x}" ${x === selected ? 'selected' : ''}>${spaced(x)}</option>`).join('');
+}
+function dueText(m) {
+    if (m.daysRemaining === null || m.daysRemaining === undefined) return '';
+    if (m.daysRemaining < 0) return `<span class="text-danger">${-m.daysRemaining} day(s) late</span>`;
+    if (m.daysRemaining === 0) return '<strong>Today</strong>';
+    return `in ${m.daysRemaining} day(s)`;
+}
+
+async function loadProjects() {
+    try {
+        const [projects, upcoming] = await Promise.all([
+            apiGet('/projects'),
+            apiGet('/projects/milestones/upcoming?days=30')
+        ]);
+        renderDeadlines(upcoming);
+        renderProjects(projects);
+    } catch (err) { showToast('Failed to load projects: ' + err.message, true); }
+}
+
+function renderDeadlines(items) {
+    const c = document.getElementById('project-deadlines');
+    if (items.length === 0) { c.innerHTML = '<p class="empty-state">No pending deadlines in the next 30 days.</p>'; return; }
+    c.innerHTML = `<table>
+        <thead><tr><th>Project</th><th>Step</th><th>Type</th><th>Date</th><th>Due</th></tr></thead>
+        <tbody>${items.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
+            <td><strong>${escapeHtml(m.projectName)}</strong></td>
+            <td>${escapeHtml(m.title)}</td>
+            <td>${spaced(m.category)}</td>
+            <td>${fmtDay(m.plannedDate)}</td>
+            <td>${dueText(m)}</td>
+        </tr>`).join('')}</tbody></table>`;
+}
+
+function renderProjects(projects) {
+    const c = document.getElementById('projects-list');
+    if (projects.length === 0) { c.innerHTML = '<p class="empty-state">No projects yet. Add your first villa project!</p>'; return; }
+    c.innerHTML = `<table>
+        <thead><tr><th>Project</th><th>Location</th><th>Villas</th><th>Status</th><th>Progress</th><th>Next step</th><th>Actions</th></tr></thead>
+        <tbody>${projects.map(p => `<tr>
+            <td><strong>${escapeHtml(p.name)}</strong></td>
+            <td>${escapeHtml([p.location, p.city].filter(Boolean).join(', '))}</td>
+            <td>${p.totalVillas}</td>
+            <td><span class="${badgeClass(p.status)}">${spaced(p.status)}</span></td>
+            <td>${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)${p.overdueMilestones ? ` <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</td>
+            <td>${p.nextMilestone ? `${escapeHtml(p.nextMilestone.title)}<br><small>${fmtDay(p.nextMilestone.plannedDate)}</small>` : '-'}</td>
+            <td class="actions">
+                <button class="btn btn-sm btn-primary" data-onclick="openProject(${p.id})">Open</button>
+                <button class="btn btn-sm btn-edit" data-onclick="editProject(${p.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" data-onclick="deleteProject(${p.id})">Delete</button>
+            </td>
+        </tr>`).join('')}</tbody></table>`;
+}
+
+function projectFormHtml(p = null) {
+    return `
+    <form id="project-form" data-onsubmit="saveProject(event, ${p ? p.id : 'null'})">
+        <div class="form-row">
+            <div class="form-group"><label>Project name *</label><input name="name" required maxlength="200" value="${p ? escapeHtml(p.name) : ''}"></div>
+            <div class="form-group"><label>Total villas</label><input name="totalVillas" type="number" min="0" value="${p ? p.totalVillas : 0}"></div>
+        </div>
+        <div class="form-group"><label>Location *</label><input name="location" required maxlength="300" value="${p ? escapeHtml(p.location) : ''}"></div>
+        <div class="form-row">
+            <div class="form-group"><label>City</label><input name="city" maxlength="100" value="${p ? escapeHtml(p.city) : ''}"></div>
+            <div class="form-group"><label>State</label><input name="state" maxlength="50" value="${p ? escapeHtml(p.state) : ''}"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Status</label><select name="status">${optionsHtml(PROJECT_STATUSES, p ? p.status : 'Planning')}</select></div>
+            <div class="form-group"><label>Start date</label><input name="startDate" type="date" value="${p ? dayInput(p.startDate) : ''}"></div>
+            <div class="form-group"><label>Expected completion</label><input name="expectedCompletionDate" type="date" value="${p ? dayInput(p.expectedCompletionDate) : ''}"></div>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea name="notes" maxlength="1000">${p ? escapeHtml(p.notes) : ''}</textarea></div>
+        ${p ? '' : '<div class="form-group"><label><input type="checkbox" name="addDefaults" checked> Add standard steps (agreement, registry, TCP, panchayat, construction stages) &mdash; dates can be edited later</label></div>'}
+        <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>`;
+}
+
+function showProjectForm() { openModal('New Project', projectFormHtml()); }
+
+async function editProject(id) {
+    try { openModal('Edit Project', projectFormHtml(await apiGet(`/projects/${id}`))); }
+    catch (err) { showToast('Failed to load project: ' + err.message, true); }
+}
+
+async function saveProject(e, id) {
+    e.preventDefault();
+    const f = e.target;
+    const data = {
+        name: f.name.value.trim(),
+        location: f.location.value.trim(),
+        city: f.city.value.trim() || null,
+        state: f.state.value.trim() || null,
+        totalVillas: parseInt(f.totalVillas.value) || 0,
+        status: f.status.value,
+        startDate: dayToIso(f.startDate.value),
+        expectedCompletionDate: dayToIso(f.expectedCompletionDate.value),
+        notes: f.notes.value.trim() || null
+    };
+    try {
+        if (id) { await apiPut(`/projects/${id}`, data); showToast('Project updated!'); }
+        else { data.addDefaultMilestones = !!(f.addDefaults && f.addDefaults.checked); await apiPost('/projects', data); showToast('Project created!'); }
+        closeModal(); loadProjects();
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function deleteProject(id) {
+    if (!confirm('Delete this project and all its steps?')) return;
+    try { await apiDelete(`/projects/${id}`); showToast('Project deleted'); loadProjects(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function openProject(id) {
+    try {
+        const p = await apiGet(`/projects/${id}`);
+        const rows = p.milestones.length === 0 ? '<p class="empty-state">No steps yet.</p>' : `<table>
+            <thead><tr><th>Step</th><th>Type</th><th>Deadline</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
+            <tbody>${p.milestones.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
+                <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
+                <td>${spaced(m.category)}</td>
+                <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
+                <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
+                <td>${fmtDay(m.completedDate)}</td>
+                <td>${escapeHtml(m.referenceNo) || '-'}</td>
+                <td class="actions">
+                    ${m.status === 'Completed' || m.status === 'Cancelled' ? '' : `<button class="btn btn-sm btn-primary" data-onclick="completeMilestone(${m.id}, ${p.id})">Done</button>`}
+                    <button class="btn btn-sm btn-edit" data-onclick="editMilestone(${p.id}, ${m.id})">Edit</button>
+                    <button class="btn btn-sm btn-danger" data-onclick="deleteMilestone(${m.id}, ${p.id})">Delete</button>
+                </td>
+            </tr>`).join('')}</tbody></table>`;
+        openModal(p.name, `
+            <p>${escapeHtml([p.location, p.city, p.state].filter(Boolean).join(', '))} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
+            <p>Progress: ${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)</p>
+            <div class="table-container">${rows}</div>
+            <div class="form-actions"><button class="btn btn-primary" data-onclick="showMilestoneForm(${p.id})">+ Add step</button></div>`);
+    } catch (err) { showToast('Failed to load project: ' + err.message, true); }
+}
+
+function milestoneFormHtml(projectId, m = null) {
+    return `
+    <form id="milestone-form" data-onsubmit="saveMilestone(event, ${projectId}, ${m ? m.id : 'null'})">
+        <div class="form-row">
+            <div class="form-group"><label>Type</label><select name="category">${optionsHtml(MILESTONE_CATEGORIES, m ? m.category : 'Approval')}</select></div>
+            <div class="form-group"><label>Status</label><select name="status">${optionsHtml(MILESTONE_STATUSES, m ? m.status : 'Pending')}</select></div>
+        </div>
+        <div class="form-group"><label>Step *</label><input name="title" required maxlength="200" placeholder="e.g. TCP approval, Registry, Foundation" value="${m ? escapeHtml(m.title) : ''}"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Deadline *</label><input name="plannedDate" type="date" required value="${m ? dayInput(m.plannedDate) : ''}"></div>
+            <div class="form-group"><label>Completed on</label><input name="completedDate" type="date" value="${m ? dayInput(m.completedDate) : ''}"></div>
+        </div>
+        <div class="form-group"><label>File / reference no.</label><input name="referenceNo" maxlength="100" value="${m ? escapeHtml(m.referenceNo) : ''}"></div>
+        <div class="form-group"><label>Notes</label><textarea name="notes" maxlength="1000">${m ? escapeHtml(m.notes) : ''}</textarea></div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>`;
+}
+
+function showMilestoneForm(projectId) { openModal('Add Step', milestoneFormHtml(projectId)); }
+
+async function editMilestone(projectId, milestoneId) {
+    try {
+        const p = await apiGet(`/projects/${projectId}`);
+        const m = p.milestones.find(x => x.id === milestoneId);
+        if (!m) { showToast('Step not found', true); return; }
+        openModal('Edit Step', milestoneFormHtml(projectId, m));
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function saveMilestone(e, projectId, id) {
+    e.preventDefault();
+    const f = e.target;
+    const data = {
+        category: f.category.value,
+        status: f.status.value,
+        title: f.title.value.trim(),
+        plannedDate: dayToIso(f.plannedDate.value),
+        completedDate: dayToIso(f.completedDate.value),
+        referenceNo: f.referenceNo.value.trim() || null,
+        notes: f.notes.value.trim() || null
+    };
+    try {
+        if (id) { await apiPut(`/projects/milestones/${id}`, data); showToast('Step updated!'); }
+        else { await apiPost(`/projects/${projectId}/milestones`, data); showToast('Step added!'); }
+        loadProjects(); openProject(projectId);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function completeMilestone(id, projectId) {
+    try {
+        await apiPut(`/projects/milestones/${id}/complete`, {});
+        showToast('Step marked done!');
+        loadProjects(); openProject(projectId);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function deleteMilestone(id, projectId) {
+    if (!confirm('Delete this step?')) return;
+    try {
+        await apiDelete(`/projects/milestones/${id}`);
+        showToast('Step deleted');
+        loadProjects(); openProject(projectId);
+    } catch (err) { showToast('Error: ' + err.message, true); }
 }
