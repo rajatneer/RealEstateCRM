@@ -119,7 +119,58 @@ function escapeHtml(text) {
 }
 
 // ── Dashboard ──
+async function loadProjectsDashboard() {
+    try {
+        const [projects, upcoming] = await Promise.all([
+            apiGet('/projects'),
+            apiGet('/projects/milestones/upcoming?days=30')
+        ]);
+        const villas = projects.reduce((n, p) => n + (p.totalVillas || 0), 0);
+        const building = projects.filter(p => p.status === 'UnderConstruction').length;
+        const overdue = upcoming.filter(m => m.isOverdue).length;
+        const dueSoon = upcoming.length - overdue;
+        document.getElementById('project-stats').innerHTML = [
+            [projects.length, 'Projects', ''],
+            [villas, 'Villas planned', ''],
+            [building, 'Under construction', ''],
+            [dueSoon, 'Steps due in 30 days', ''],
+            [overdue, 'Overdue steps', overdue ? 'stat-alert' : '']
+        ].map(([n, l, c]) => `<div class="stat-card ${c}"><div class="stat-number">${n}</div><div class="stat-label">${l}</div></div>`).join('');
+
+        // Status split bar
+        const bar = document.getElementById('project-status-bar');
+        if (projects.length === 0) { bar.innerHTML = ''; }
+        else {
+            bar.innerHTML = '<div class="status-bar">' + PROJECT_STATUSES.map(s => {
+                const n = projects.filter(p => p.status === s).length;
+                return n ? `<span class="seg seg-${s.toLowerCase()}" style="flex:${n}" title="${spaced(s)}: ${n}">${n}</span>` : '';
+            }).join('') + '</div><div class="status-legend">' + PROJECT_STATUSES.map(s => {
+                const n = projects.filter(p => p.status === s).length;
+                return n ? `<span><i class="dot seg-${s.toLowerCase()}"></i>${spaced(s)} ${n}</span>` : '';
+            }).join('') + '</div>';
+        }
+
+        const prog = document.getElementById('dash-project-progress');
+        prog.innerHTML = projects.length === 0 ? '<p class="empty-state">No projects yet. Add one from the Projects page.</p>' :
+            `<table><tbody>${projects.map(p => `<tr>
+                <td><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.city || p.location)}</small></td>
+                <td style="min-width:150px"><div class="progress"><span style="width:${p.progressPercent}%"></span></div><small>${p.completedMilestones} of ${p.totalMilestones} steps${p.overdueMilestones ? ` &middot; <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</small></td>
+                <td><span class="${badgeClass(p.status)}">${spaced(p.status)}</span></td>
+            </tr>`).join('')}</tbody></table>`;
+
+        const dl = document.getElementById('dash-project-deadlines');
+        dl.innerHTML = upcoming.length === 0 ? '<p class="empty-state">Nothing due in the next 30 days.</p>' :
+            `<table><tbody>${upcoming.slice(0, 6).map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
+                <td><strong>${escapeHtml(m.title)}</strong><br><small>${escapeHtml(m.projectName)}</small></td>
+                <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
+            </tr>`).join('')}</tbody></table>`;
+    } catch (err) {
+        document.getElementById('dash-project-progress').innerHTML = '<p class="empty-state">Could not load projects.</p>';
+    }
+}
+
 async function loadDashboard() {
+    loadProjectsDashboard();
     try {
         const [contacts, properties, interactions, leads, overdueTasks] = await Promise.all([
             apiGet('/contacts'),

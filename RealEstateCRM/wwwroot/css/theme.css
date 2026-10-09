@@ -180,3 +180,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--sea); outli
 .progress { height: 6px; width: 140px; background: #e4eae6; border-radius: 999px; overflow: hidden; margin-bottom: 5px; }
 .progress > span { display: block; height: 100%; background: var(--sea); border-radius: 999px; }
 td small { color: var(--ink-2); }
+
+/* Dashboard: villa projects */
+.stat-card.stat-alert { border-top-color: var(--brick); }
+.stat-card.stat-alert .stat-number { color: var(--brick); }
+.status-bar-wrap { margin: 14px 0 4px; max-width: 1280px; }
+.status-bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; gap: 2px; }
+.status-bar .seg { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12.5px; font-weight: 600; min-width: 26px; }
+.status-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; color: var(--ink-2); font-size: 13px; }
+.status-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.seg-planning { background: #3b8ea8; }
+.seg-approvals { background: var(--brass); }
+.seg-underconstruction { background: #6a56c4; }
+.seg-completed { background: #2e9461; }
+.seg-onhold { background: #8a9692; }
+.dash-split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; max-width: 1280px; }
+.dash-split h3 { margin-top: 18px; }
+@media (max-width: 900px) { .dash-split { grid-template-columns: 1fr; } }
