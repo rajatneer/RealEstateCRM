@@ -1607,11 +1607,10 @@ async function openProject(id) {
     try {
         const p = await apiGet(`/projects/${id}`);
         const rows = p.milestones.length === 0 ? '<p class="empty-state">No steps yet.</p>' : `<table>
-            <thead><tr><th>Step</th><th>Type</th><th>Deadline</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
+            <thead><tr><th>Step</th><th>Type</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
             <tbody>${p.milestones.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
                 <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
                 <td>${spaced(m.category)}</td>
-                <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
                 <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
                 <td>${fmtDay(m.completedDate)}</td>
                 <td>${escapeHtml(m.referenceNo) || '-'}</td>
@@ -1627,7 +1626,7 @@ async function openProject(id) {
                 <label>Current step (project abhi kis step par hai)</label>
                 <select id="current-step-select">
                     <option value="">-- Select current step --</option>
-                    ${p.milestones.filter(m => m.status !== 'Cancelled').map(m => `<option value="${m.id}" ${(p.milestones.find(x => x.status === 'InProgress') || p.nextMilestone || {}).id === m.id ? 'selected' : ''}>${escapeHtml(m.title)} (${fmtDay(m.plannedDate)})</option>`).join('')}
+                    ${p.milestones.filter(m => m.status !== 'Cancelled').map(m => `<option value="${m.id}" ${(p.milestones.find(x => x.status === 'InProgress') || p.nextMilestone || {}).id === m.id ? 'selected' : ''}>${escapeHtml(m.title)}</option>`).join('')}
                 </select>
                 <small>Isse pehle ke saare steps Completed ho jaayenge, ye step In Progress, baaki Pending.</small>
             </div>

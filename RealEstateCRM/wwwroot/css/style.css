@@ -744,6 +744,5 @@ tr:hover {
 .modal.modal-wide table { width: 100%; table-layout: auto; }
 .modal.modal-wide th, .modal.modal-wide td { padding: 10px 12px; vertical-align: middle; }
 .modal.modal-wide td:first-child { min-width: 220px; }
-.modal.modal-wide td:nth-child(3) { white-space: nowrap; }
 .modal.modal-wide td.actions { white-space: nowrap; }
 .modal.modal-wide #current-step-select { width: 100%; max-width: 480px; }
