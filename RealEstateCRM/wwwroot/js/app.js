@@ -86,7 +86,8 @@ function showToast(message, isError = false) {
 }
 
 // ── Modal ──
-function openModal(title, html) {
+function openModal(title, html, wide = false) {
+    document.querySelector('#modal-overlay .modal').classList.toggle('modal-wide', wide);
     document.getElementById('modal-title').textContent = title;
     document.getElementById('modal-body').innerHTML = html;
     document.getElementById('modal-overlay').classList.add('active');
@@ -1634,7 +1635,7 @@ async function openProject(id) {
                 <button class="btn btn-primary" data-onclick="saveCurrentStep(${p.id})">Save</button>
                 <button class="btn" data-onclick="showMilestoneForm(${p.id})">+ Add step</button>
             </div>
-            <div class="table-container">${rows}</div>`);
+            <div class="table-container">${rows}</div>`, true);
         window.__openProject = p;
     } catch (err) { showToast('Failed to load project: ' + err.message, true); }
 }
