@@ -226,3 +226,8 @@ td small { color: var(--ink-2); }
 .nowrap { white-space: nowrap; }
 .doc-upload input[name="stage"] { flex: 1 1 220px; min-width: 0; }
 #project-docs { margin-bottom: 22px; }
+
+/* Page info note */
+.info-note { display: flex; gap: 12px; align-items: flex-start; background: var(--sea-tint); border: 1px solid #c3e0d8; border-left: 4px solid var(--sea); border-radius: 8px; padding: 11px 16px; margin: 0 0 20px; max-width: 1280px; }
+.info-note svg { width: 20px; height: 20px; flex: none; margin-top: 1px; fill: none; stroke: var(--sea-dark); stroke-width: 1.8; stroke-linecap: round; }
+.info-note p { margin: 0; color: #1d4a40; font-size: 14px; line-height: 1.5; max-width: 90ch; }

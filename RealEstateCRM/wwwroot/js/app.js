@@ -2058,3 +2058,38 @@ async function deleteProjectDoc(id, projectId) {
     try { await apiDelete(`/documents/${id}`); showToast('Document deleted'); loadProjectDocs(projectId); }
     catch (err) { showToast('Error: ' + err.message, true); }
 }
+
+
+// ══════════════════════════════════════════
+// ── Page info notes: a short "what is this page for" box at the top of every menu page ──
+// ══════════════════════════════════════════
+const PAGE_INFO = {
+    dashboard: 'Your day at a glance: contacts, leads, overdue tasks and the progress of every villa project. Start here each morning.',
+    projects: 'Your villa projects by location. Open a project to see its stages with owners and deadlines, set the current step and upload paper work.',
+    stages: 'Set the order, owner and default days for each stage once. Every new project copies this list, and its deadlines are counted from the project start date.',
+    people: 'The master list of people used in the Project manager and Escalation owner dropdowns on each project.',
+    contacts: 'Everyone you deal with: buyers, sellers, tenants, landlords and agents. Add a contact first, then link leads, tasks and site visits to them.',
+    leads: 'Track each enquiry from first contact to Won or Lost. Open a lead card to update its stage and deal value.',
+    tasks: 'Follow-ups and to-dos with a due date and priority. Overdue tasks show in red here and on the dashboard.',
+    interactions: 'A log of every call, meeting, email or message with a contact, so the whole team can see the history.',
+    sitevisits: 'Schedule and track site visits: the date, pickup location, status and feedback after the visit.',
+    properties: 'The properties and plots you list. Keep price, status (Available, Sold, Rented) and the owner up to date.',
+    brokerages: 'Brokerage deals with deal value, commission, GST and payment status. Use it to see what payment is still pending.',
+    calculator: 'Work out a loan EMI or the stamp duty on a purchase. Results are estimates and are not saved.'
+};
+
+function addPageInfoNotes() {
+    Object.entries(PAGE_INFO).forEach(([page, text]) => {
+        const section = document.getElementById(`page-${page}`);
+        if (!section || section.querySelector('.info-note')) return;
+        section.querySelectorAll('.page-note').forEach(n => n.remove());
+        const note = document.createElement('div');
+        note.className = 'info-note';
+        note.setAttribute('role', 'note');
+        note.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg><p></p>';
+        note.querySelector('p').textContent = text;
+        const anchor = section.querySelector('.page-header') || section.querySelector('h1');
+        anchor.insertAdjacentElement('afterend', note);
+    });
+}
+addPageInfoNotes();
