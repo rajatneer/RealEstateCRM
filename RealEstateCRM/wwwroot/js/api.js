@@ -47,3 +47,24 @@ const apiGet = endpoint => apiRequest('GET', endpoint);
 const apiPost = (endpoint, data) => apiRequest('POST', endpoint, data);
 const apiPut = (endpoint, data) => apiRequest('PUT', endpoint, data);
 const apiDelete = endpoint => apiRequest('DELETE', endpoint).then(() => true);
+
+
+// Upload a file (multipart). The browser sets the multipart boundary, so no Content-Type header here.
+async function apiUpload(endpoint, formData) {
+    const response = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers: authHeaders(), body: formData });
+    handleUnauthorized(response, endpoint);
+    if (!response.ok) throw new Error(await readError(response, `Upload failed: ${response.status}`));
+    return response.json();
+}
+
+// Fetch a protected file with the bearer token and hand it to the browser as a download.
+async function apiDownload(endpoint, fileName) {
+    const response = await fetch(`${API_BASE}${endpoint}`, { headers: authHeaders() });
+    handleUnauthorized(response, endpoint);
+    if (!response.ok) throw new Error(await readError(response, `Download failed: ${response.status}`));
+    const url = URL.createObjectURL(await response.blob());
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}

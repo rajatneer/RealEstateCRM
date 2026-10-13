@@ -215,3 +215,12 @@ td small { color: var(--ink-2); }
 .form-group label.check-row { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; }
 .check-row input { margin-top: 3px; flex: none; width: auto; }
 .nav-group:nth-of-type(2) { color: #d2b36b; }
+
+/* Project documents */
+.doc-upload { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 6px; }
+.doc-upload input[type="file"] { flex: 1 1 240px; min-width: 0; }
+.doc-upload select { flex: 0 1 220px; max-width: 100%; }
+.doc-upload input[type="text"] { flex: 1 1 180px; min-width: 0; }
+.file-kind { display: inline-block; min-width: 46px; text-align: center; padding: 1px 7px; border-radius: 6px; background: var(--sea-tint); color: var(--sea-dark); font-size: 11.5px; font-weight: 700; margin-right: 6px; }
+#project-docs { margin-top: 10px; }
+.nowrap { white-space: nowrap; }

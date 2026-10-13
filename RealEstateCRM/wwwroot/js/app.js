@@ -1659,15 +1659,16 @@ async function openProject(id) {
     try {
         const p = await apiGet(`/projects/${id}`);
         const rows = p.milestones.length === 0 ? '<p class="empty-state">No steps yet.</p>' : `<table>
-            <thead><tr><th>Step</th><th>Owner</th><th>Type</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
+            <thead><tr><th>Step</th><th>Owner</th><th>Type</th><th>Deadline</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
             <tbody>${p.milestones.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
                 <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
                 <td>${escapeHtml(m.owner) || '-'}</td>
                 <td>${spaced(m.category)}</td>
+                <td class="nowrap">${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
                 <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
                 <td>${fmtDay(m.completedDate)}</td>
                 <td>${escapeHtml(m.referenceNo) || '-'}</td>
-                <td class="actions">
+                <td class="stage-actions">
                     <button class="btn btn-sm btn-edit" data-onclick="editMilestone(${p.id}, ${m.id})">Edit</button>
                     <button class="btn btn-sm btn-danger" data-onclick="deleteMilestone(${m.id}, ${p.id})">Delete</button>
                 </td>
@@ -1688,7 +1689,17 @@ async function openProject(id) {
                 <button class="btn btn-primary" data-onclick="saveCurrentStep(${p.id})">Save</button>
                 <button class="btn" data-onclick="showMilestoneForm(${p.id})">+ Add step</button>
             </div>
-            <div class="table-container">${rows}</div>`, true);
+            <div class="table-container">${rows}</div>
+            <h3>Documents</h3>
+            <form class="doc-upload" data-onsubmit="uploadProjectDoc(event, ${p.id})">
+                <input type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt">
+                <select name="milestoneId"><option value="">Whole project</option>${p.milestones.map(m => `<option value="${m.id}">${escapeHtml(m.title)}</option>`).join('')}</select>
+                <input type="text" name="note" maxlength="500" placeholder="Note (optional)">
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+            <small class="muted">PDF, photos, Word, Excel, CSV or text. Up to 10 MB per file.</small>
+            <div id="project-docs" class="table-container"><p class="empty-state">Loading...</p></div>`, true);
+        loadProjectDocs(p.id);
         window.__openProject = p;
     } catch (err) { showToast('Failed to load project: ' + err.message, true); }
 }
@@ -1975,5 +1986,76 @@ async function saveNewPerson(e) {
 async function deletePerson(id) {
     if (!confirm('Remove this person from the list? Projects already using the name keep it.')) return;
     try { await apiDelete(`/people/${id}`); showToast('Person removed'); loadPeoplePage(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+
+// ══════════════════════════════════════════
+// ── Project documents (paper work uploads) ──
+// ══════════════════════════════════════════
+function fmtSize(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+    return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function fileKind(name) {
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if (ext === 'pdf') return 'PDF';
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) return 'Photo';
+    if (['doc', 'docx'].includes(ext)) return 'Word';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'Sheet';
+    return 'File';
+}
+
+async function loadProjectDocs(projectId) {
+    const c = document.getElementById('project-docs');
+    if (!c) return;
+    try {
+        const docs = await apiGet(`/projects/${projectId}/documents`);
+        window.__docs = docs;
+        c.innerHTML = docs.length === 0 ? '<p class="empty-state">No documents yet. Upload the first one above.</p>' :
+            `<table><thead><tr><th>File</th><th>Stage</th><th>Added</th><th></th></tr></thead><tbody>${docs.map(d => `<tr>
+                <td><span class="file-kind">${fileKind(d.fileName)}</span> <strong>${escapeHtml(d.fileName)}</strong><br><small>${fmtSize(d.sizeBytes)}${d.note ? ' &middot; ' + escapeHtml(d.note) : ''}</small></td>
+                <td>${escapeHtml(d.stageName) || '<span class="muted">Whole project</span>'}</td>
+                <td>${fmtDay(d.uploadedAt)}<br><small>${escapeHtml(d.uploadedBy) || ''}</small></td>
+                <td class="stage-actions">
+                    <button class="btn btn-sm btn-edit" data-onclick="downloadProjectDoc(${d.id})">Download</button>
+                    <button class="btn btn-sm btn-danger" data-onclick="deleteProjectDoc(${d.id}, ${projectId})">Delete</button>
+                </td>
+            </tr>`).join('')}</tbody></table>`;
+    } catch (err) { c.innerHTML = '<p class="empty-state">Could not load documents.</p>'; }
+}
+
+async function uploadProjectDoc(e, projectId) {
+    e.preventDefault();
+    const f = e.target;
+    const file = f.file.files[0];
+    if (!file) { showToast('Choose a file first', true); return; }
+    if (file.size > 10 * 1024 * 1024) { showToast('File is too large. The limit is 10 MB.', true); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    if (f.milestoneId.value) fd.append('milestoneId', f.milestoneId.value);
+    if (f.note.value.trim()) fd.append('note', f.note.value.trim());
+    const btn = f.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = 'Uploading...';
+    try {
+        await apiUpload(`/projects/${projectId}/documents`, fd);
+        showToast('Document uploaded');
+        f.reset();
+        loadProjectDocs(projectId);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+    finally { btn.disabled = false; btn.textContent = 'Upload'; }
+}
+
+async function downloadProjectDoc(id) {
+    const d = (window.__docs || []).find(x => x.id === id);
+    try { await apiDownload(`/documents/${id}/download`, d ? d.fileName : 'document'); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function deleteProjectDoc(id, projectId) {
+    if (!confirm('Delete this document?')) return;
+    try { await apiDelete(`/documents/${id}`); showToast('Document deleted'); loadProjectDocs(projectId); }
     catch (err) { showToast('Error: ' + err.message, true); }
 }

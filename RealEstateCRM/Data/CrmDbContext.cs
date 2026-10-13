@@ -26,6 +26,7 @@ namespace RealEstateCRM.Data
         public DbSet<CrmTask> CrmTasks => Set<CrmTask>();
         public DbSet<Brokerage> Brokerages => Set<Brokerage>();
         public DbSet<SiteVisit> SiteVisits => Set<SiteVisit>();
+        public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
         public DbSet<Person> People => Set<Person>();
         public DbSet<StageTemplate> StageTemplates => Set<StageTemplate>();
         public DbSet<Project> Projects => Set<Project>();
@@ -105,6 +106,13 @@ namespace RealEstateCRM.Data
             modelBuilder.Entity<SiteVisit>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
 
             modelBuilder.Entity<Lead>().HasIndex(e => e.AssignedUserId);
+            modelBuilder.Entity<ProjectDocument>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
+            modelBuilder.Entity<ProjectDocument>(entity =>
+            {
+                entity.HasIndex(d => d.CompanyId);
+                entity.HasIndex(d => d.ProjectId);
+                entity.HasOne(d => d.Project).WithMany().HasForeignKey(d => d.ProjectId).OnDelete(DeleteBehavior.Cascade);
+            });
             modelBuilder.Entity<Person>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
             modelBuilder.Entity<Person>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<StageTemplate>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);

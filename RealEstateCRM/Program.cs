@@ -129,6 +129,7 @@ builder.Services.AddScoped<ISiteVisitService, SiteVisitService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IStageService, StageService>();
 builder.Services.AddScoped<IPersonService, PersonService>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddSingleton<ICalculatorService, CalculatorService>();
 
 builder.Services.AddControllers()
