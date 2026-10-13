@@ -29,7 +29,7 @@ namespace RealEstateCRM.Models.DTOs
         [StringLength(1000)]
         public string? Notes { get; set; }
 
-        /// <summary>On create only: also add the standard step list (agreement, registry, approvals, construction stages).</summary>
+        /// <summary>On create only: copy every stage from the Stages page (owner, order, default time) into this project.</summary>
         public bool AddDefaultMilestones { get; set; }
     }
 
@@ -42,6 +42,9 @@ namespace RealEstateCRM.Models.DTOs
 
         [Required, StringLength(200)]
         public string Title { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Owner { get; set; }
 
         public DateTime PlannedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
@@ -72,6 +75,7 @@ namespace RealEstateCRM.Models.DTOs
         public string? ProjectName { get; set; }
         public MilestoneCategory Category { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string? Owner { get; set; }
         public DateTime PlannedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
         public MilestoneStatus Status { get; set; }
@@ -119,6 +123,7 @@ namespace RealEstateCRM.Models.DTOs
                 ProjectName = includeProjectName ? m.Project?.Name : null,
                 Category = m.Category,
                 Title = m.Title,
+                Owner = m.Owner,
                 PlannedDate = m.PlannedDate,
                 CompletedDate = m.CompletedDate,
                 Status = m.Status,
@@ -131,7 +136,7 @@ namespace RealEstateCRM.Models.DTOs
 
         public static ProjectDto ToDto(this Project p, DateTime today)
         {
-            var milestones = p.Milestones.OrderBy(m => m.PlannedDate).ThenBy(m => m.Id).Select(m => m.ToDto(today)).ToList();
+            var milestones = p.Milestones.OrderBy(m => m.PlannedDate).ThenBy(m => m.Sequence).ThenBy(m => m.Id).Select(m => m.ToDto(today)).ToList();
             var counted = milestones.Where(m => m.Status != MilestoneStatus.Cancelled).ToList();
             var done = counted.Count(m => m.Status == MilestoneStatus.Completed);
 

@@ -69,6 +69,13 @@ namespace RealEstateCRM.Models
         [Required, MaxLength(200)]
         public string Title { get; set; } = string.Empty;
 
+        /// <summary>Who is responsible for this step (copied from the stage list when the project is created).</summary>
+        [MaxLength(100)]
+        public string? Owner { get; set; }
+
+        /// <summary>Position in the stage list; keeps the original order when dates tie.</summary>
+        public int Sequence { get; set; }
+
         /// <summary>Deadline / planned date (date only).</summary>
         public DateTime PlannedDate { get; set; }
 

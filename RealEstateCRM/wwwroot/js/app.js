@@ -74,6 +74,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
         if (page === 'calculator') loadCalculatorPage();
         if (page === 'sitevisits') loadSiteVisits();
         if (page === 'projects') loadProjects();
+        if (page === 'stages') loadStages();
     });
 });
 
@@ -161,7 +162,7 @@ async function loadProjectsDashboard() {
         const dl = document.getElementById('dash-project-deadlines');
         dl.innerHTML = upcoming.length === 0 ? '<p class="empty-state">Nothing due in the next 30 days.</p>' :
             `<table><tbody>${upcoming.slice(0, 6).map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
-                <td><strong>${escapeHtml(m.title)}</strong><br><small>${escapeHtml(m.projectName)}</small></td>
+                <td><strong>${escapeHtml(m.title)}</strong><br><small>${escapeHtml(m.projectName)}${m.owner ? ' &middot; ' + escapeHtml(m.owner) : ''}</small></td>
                 <td>${fmtDay(m.plannedDate)}<br><small>${dueText(m)}</small></td>
             </tr>`).join('')}</tbody></table>`;
     } catch (err) {
@@ -1567,11 +1568,11 @@ function renderDeadlines(items) {
     const c = document.getElementById('project-deadlines');
     if (items.length === 0) { c.innerHTML = '<p class="empty-state">No pending deadlines in the next 30 days.</p>'; return; }
     c.innerHTML = `<table>
-        <thead><tr><th>Project</th><th>Step</th><th>Type</th><th>Date</th><th>Due</th></tr></thead>
+        <thead><tr><th>Project</th><th>Step</th><th>Owner</th><th>Date</th><th>Due</th></tr></thead>
         <tbody>${items.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
             <td><strong>${escapeHtml(m.projectName)}</strong></td>
             <td>${escapeHtml(m.title)}</td>
-            <td>${spaced(m.category)}</td>
+            <td>${escapeHtml(m.owner) || '-'}</td>
             <td>${fmtDay(m.plannedDate)}</td>
             <td>${dueText(m)}</td>
         </tr>`).join('')}</tbody></table>`;
@@ -1615,7 +1616,7 @@ function projectFormHtml(p = null) {
             <div class="form-group"><label>Expected completion</label><input name="expectedCompletionDate" type="date" value="${p ? dayInput(p.expectedCompletionDate) : ''}"></div>
         </div>
         <div class="form-group"><label>Notes</label><textarea name="notes" maxlength="1000">${p ? escapeHtml(p.notes) : ''}</textarea></div>
-        ${p ? '' : '<div class="form-group"><label><input type="checkbox" name="addDefaults" checked> Add standard steps (agreement, registry, TCP, panchayat, construction stages) &mdash; dates can be edited later</label></div>'}
+        ${p ? '' : '<div class="form-group"><label><input type="checkbox" name="addDefaults" checked> Add all stages from the Stages page (owner and deadlines are filled in; you can edit them later)</label></div>'}
         <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>
     </form>`;
 }
@@ -1658,9 +1659,10 @@ async function openProject(id) {
     try {
         const p = await apiGet(`/projects/${id}`);
         const rows = p.milestones.length === 0 ? '<p class="empty-state">No steps yet.</p>' : `<table>
-            <thead><tr><th>Step</th><th>Type</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
+            <thead><tr><th>Step</th><th>Owner</th><th>Type</th><th>Status</th><th>Done on</th><th>Ref no.</th><th></th></tr></thead>
             <tbody>${p.milestones.map(m => `<tr class="${m.isOverdue ? 'task-overdue' : ''}">
                 <td><strong>${escapeHtml(m.title)}</strong>${m.notes ? `<br><small>${escapeHtml(m.notes)}</small>` : ''}</td>
+                <td>${escapeHtml(m.owner) || '-'}</td>
                 <td>${spaced(m.category)}</td>
                 <td><span class="${badgeClass(m.status)}">${spaced(m.status)}</span></td>
                 <td>${fmtDay(m.completedDate)}</td>
@@ -1677,7 +1679,7 @@ async function openProject(id) {
                 <label>Current step (project abhi kis step par hai)</label>
                 <select id="current-step-select">
                     <option value="">-- Select current step --</option>
-                    ${p.milestones.filter(m => m.status !== 'Cancelled').map(m => `<option value="${m.id}" ${(p.milestones.find(x => x.status === 'InProgress') || p.nextMilestone || {}).id === m.id ? 'selected' : ''}>${escapeHtml(m.title)}</option>`).join('')}
+                    ${p.milestones.filter(m => m.status !== 'Cancelled').map(m => `<option value="${m.id}" ${(p.milestones.find(x => x.status === 'InProgress') || p.nextMilestone || {}).id === m.id ? 'selected' : ''}>${escapeHtml(m.title)}${m.owner ? ' (' + escapeHtml(m.owner) + ')' : ''}</option>`).join('')}
                 </select>
                 <small>Isse pehle ke saare steps Completed ho jaayenge, ye step In Progress, baaki Pending.</small>
             </div>
@@ -1697,7 +1699,10 @@ function milestoneFormHtml(projectId, m = null) {
             <div class="form-group"><label>Type</label><select name="category">${optionsHtml(MILESTONE_CATEGORIES, m ? m.category : 'Approval')}</select></div>
             <div class="form-group"><label>Status</label><select name="status">${optionsHtml(MILESTONE_STATUSES, m ? m.status : 'Pending')}</select></div>
         </div>
-        <div class="form-group"><label>Step *</label><input name="title" required maxlength="200" placeholder="e.g. TCP approval, Registry, Foundation" value="${m ? escapeHtml(m.title) : ''}"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Step *</label><input name="title" required maxlength="200" placeholder="e.g. TCP approval, Registry, Foundation" value="${m ? escapeHtml(m.title) : ''}"></div>
+            <div class="form-group"><label>Owner</label><input name="owner" maxlength="100" list="owner-options" value="${m ? escapeHtml(m.owner) : ''}">${ownerDatalist()}</div>
+        </div>
         <div class="form-row">
             <div class="form-group"><label>Deadline *</label><input name="plannedDate" type="date" required value="${m ? dayInput(m.plannedDate) : ''}"></div>
             <div class="form-group"><label>Completed on</label><input name="completedDate" type="date" value="${m ? dayInput(m.completedDate) : ''}"></div>
@@ -1726,6 +1731,7 @@ async function saveMilestone(e, projectId, id) {
         category: f.category.value,
         status: f.status.value,
         title: f.title.value.trim(),
+        owner: f.owner.value.trim() || null,
         plannedDate: dayToIso(f.plannedDate.value),
         completedDate: dayToIso(f.completedDate.value),
         referenceNo: f.referenceNo.value.trim() || null,
@@ -1770,7 +1776,7 @@ async function saveCurrentStep(projectId) {
             const target = i < idx ? 'Completed' : (i === idx ? 'InProgress' : 'Pending');
             if (m.status === target) continue;
             await apiPut(`/projects/milestones/${m.id}`, {
-                category: m.category, status: target, title: m.title,
+                category: m.category, status: target, title: m.title, owner: m.owner,
                 plannedDate: m.plannedDate,
                 completedDate: target === 'Completed' ? (m.completedDate || null) : null,
                 referenceNo: m.referenceNo, notes: m.notes
@@ -1779,4 +1785,123 @@ async function saveCurrentStep(projectId) {
         showToast('Current step saved!');
         loadProjects(); openProject(projectId);
     } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+
+// ══════════════════════════════════════════
+// ── Stages (standard stage list) ──
+// ══════════════════════════════════════════
+const COMMON_OWNERS = ['Nakul', 'Ridhima', 'Manjunath', 'Contractor', 'Client', 'Interior Designer', 'Video Editor'];
+window.__owners = COMMON_OWNERS.slice();
+
+function ownerDatalist() {
+    return `<datalist id="owner-options">${window.__owners.map(o => `<option value="${escapeHtml(o)}"></option>`).join('')}</datalist>`;
+}
+
+async function loadStages() {
+    try {
+        const stages = await apiGet('/stages');
+        window.__owners = Array.from(new Set(COMMON_OWNERS.concat(stages.map(s => s.owner).filter(Boolean))));
+        renderStages(stages);
+    } catch (err) { showToast('Failed to load stages: ' + err.message, true); }
+}
+
+function renderStages(stages) {
+    const c = document.getElementById('stages-list');
+    const summary = document.getElementById('stages-summary');
+    if (stages.length === 0) {
+        summary.innerHTML = '';
+        c.innerHTML = '<div class="empty-state"><p>No stages yet.</p><button class="btn btn-primary" data-onclick="seedStages()">Load standard villa stages</button></div>';
+        return;
+    }
+    const total = stages.reduce((n, s) => n + s.defaultDays, 0);
+    summary.textContent = `${stages.length} stages, ${total} days from start to the last stage.`;
+    let running = 0;
+    c.innerHTML = ownerDatalist() + `<table class="stage-table">
+        <thead><tr><th>#</th><th>Stage</th><th>Owner</th><th>Default days</th><th>Day of project</th><th></th></tr></thead>
+        <tbody>${stages.map((s, i) => {
+            running += s.defaultDays;
+            return `<tr data-id="${s.id}" data-category="${s.category}" data-name="${escapeHtml(s.name)}" data-owner="${escapeHtml(s.owner || '')}" data-days="${s.defaultDays}">
+                <td>${s.sequence}</td>
+                <td><input class="st-name" maxlength="200" value="${escapeHtml(s.name)}"></td>
+                <td><input class="st-owner" maxlength="100" list="owner-options" value="${escapeHtml(s.owner || '')}" placeholder="Choose or type"></td>
+                <td><input class="st-days" type="number" min="0" max="3650" value="${s.defaultDays}"></td>
+                <td class="muted">Day ${running}</td>
+                <td class="stage-actions">
+                    <button class="btn btn-sm" data-onclick="moveStage(${s.id}, 'up')" ${i === 0 ? 'disabled' : ''} aria-label="Move up">&uarr;</button>
+                    <button class="btn btn-sm" data-onclick="moveStage(${s.id}, 'down')" ${i === stages.length - 1 ? 'disabled' : ''} aria-label="Move down">&darr;</button>
+                    <button class="btn btn-sm btn-danger" data-onclick="deleteStage(${s.id})">Delete</button>
+                </td>
+            </tr>`;
+        }).join('')}</tbody></table>`;
+}
+
+async function saveStageChanges() {
+    const rows = Array.from(document.querySelectorAll('#stages-list tr[data-id]'));
+    const changed = rows.filter(r => {
+        const name = r.querySelector('.st-name').value.trim();
+        const owner = r.querySelector('.st-owner').value.trim();
+        const days = parseInt(r.querySelector('.st-days').value) || 0;
+        return name !== r.dataset.name || owner !== r.dataset.owner || String(days) !== r.dataset.days;
+    });
+    if (changed.length === 0) { showToast('No changes to save'); return; }
+    try {
+        for (const r of changed) {
+            const name = r.querySelector('.st-name').value.trim();
+            if (!name) { showToast('A stage name cannot be empty', true); return; }
+            await apiPut(`/stages/${r.dataset.id}`, {
+                name,
+                owner: r.querySelector('.st-owner').value.trim() || null,
+                defaultDays: parseInt(r.querySelector('.st-days').value) || 0,
+                category: r.dataset.category
+            });
+        }
+        showToast(`${changed.length} stage(s) saved!`);
+        loadStages();
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+function showStageForm() {
+    openModal('Add stage', `
+    <form data-onsubmit="saveNewStage(event)">
+        <div class="form-group"><label>Stage *</label><input name="name" required maxlength="200"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Owner</label><input name="owner" maxlength="100" list="owner-options">${ownerDatalist()}</div>
+            <div class="form-group"><label>Default days</label><input name="days" type="number" min="0" max="3650" value="7"></div>
+        </div>
+        <div class="form-group"><label>Type</label><select name="category">${optionsHtml(MILESTONE_CATEGORIES, 'Other')}</select></div>
+        <p class="muted">The stage is added at the end of the list. Use the arrows to move it.</p>
+        <div class="form-actions"><button type="submit" class="btn btn-primary">Add stage</button></div>
+    </form>`);
+}
+
+async function saveNewStage(e) {
+    e.preventDefault();
+    const f = e.target;
+    try {
+        await apiPost('/stages', {
+            name: f.name.value.trim(),
+            owner: f.owner.value.trim() || null,
+            defaultDays: parseInt(f.days.value) || 0,
+            category: f.category.value
+        });
+        showToast('Stage added!');
+        closeModal(); loadStages();
+    } catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function moveStage(id, dir) {
+    try { await apiPut(`/stages/${id}/move?direction=${dir}`, {}); loadStages(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function deleteStage(id) {
+    if (!confirm('Delete this stage? Existing projects keep their steps.')) return;
+    try { await apiDelete(`/stages/${id}`); showToast('Stage deleted'); loadStages(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function seedStages() {
+    try { await apiPost('/stages/seed-defaults', {}); showToast('Standard stages loaded'); loadStages(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
 }

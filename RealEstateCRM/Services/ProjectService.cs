@@ -25,24 +25,6 @@ namespace RealEstateCRM.Services
 
     public class ProjectService : IProjectService
     {
-        /// <summary>Starting step list; dates are offsets (days) from the project start date and meant to be edited.</summary>
-        private static readonly (MilestoneCategory Category, string Title, int Days)[] DefaultSteps =
-        {
-            (MilestoneCategory.Agreement,    "Agreement / MOU signing",            15),
-            (MilestoneCategory.Registry,     "Land registry",                      30),
-            (MilestoneCategory.Approval,     "TCP approval",                       60),
-            (MilestoneCategory.Approval,     "Panchayat approval",                 75),
-            (MilestoneCategory.Construction, "Site clearing & layout marking",     90),
-            (MilestoneCategory.Construction, "Foundation",                        120),
-            (MilestoneCategory.Construction, "Plinth",                            150),
-            (MilestoneCategory.Construction, "Structure / slab",                  210),
-            (MilestoneCategory.Construction, "Brickwork",                         250),
-            (MilestoneCategory.Construction, "Plaster",                           290),
-            (MilestoneCategory.Construction, "Flooring & electrical",             330),
-            (MilestoneCategory.Construction, "Finishing & painting",              380),
-            (MilestoneCategory.Other,        "Handover",                          420),
-        };
-
         private readonly CrmDbContext _context;
         private readonly ILogger<ProjectService> _logger;
         private readonly IPagingContext _paging;
@@ -83,14 +65,19 @@ namespace RealEstateCRM.Services
 
             if (dto.AddDefaultMilestones)
             {
-                var start = (dto.StartDate ?? DateTime.UtcNow).Date;
-                foreach (var (category, title, days) in DefaultSteps)
+                // Copy every stage from the Stages page: deadlines are a running total of each stage's default days.
+                var stages = await _context.StageTemplates.OrderBy(s => s.Sequence).ThenBy(s => s.Id).ToListAsync();
+                var cursor = (dto.StartDate ?? DateTime.UtcNow).Date;
+                foreach (var stage in stages)
                 {
+                    cursor = cursor.AddDays(stage.DefaultDays);
                     project.Milestones.Add(new ProjectMilestone
                     {
-                        Category = category,
-                        Title = title,
-                        PlannedDate = start.AddDays(days),
+                        Category = stage.Category,
+                        Title = stage.Name,
+                        Owner = stage.Owner,
+                        Sequence = stage.Sequence,
+                        PlannedDate = cursor,
                         Status = MilestoneStatus.Pending,
                         CreatedAt = DateTime.UtcNow
                     });
@@ -138,9 +125,12 @@ namespace RealEstateCRM.Services
         {
             await _context.EnsureExistsAsync<Project>(projectId, "Project");
 
+            var nextSeq = (await _context.ProjectMilestones.Where(m => m.ProjectId == projectId)
+                .Select(m => (int?)m.Sequence).MaxAsync() ?? 0) + 1;
             var milestone = new ProjectMilestone
             {
                 ProjectId = projectId,
+                Sequence = nextSeq,
                 CreatedAt = DateTime.UtcNow
             };
             Apply(milestone, dto);
@@ -195,6 +185,7 @@ namespace RealEstateCRM.Services
         {
             milestone.Category = dto.Category;
             milestone.Title = dto.Title.Trim();
+            milestone.Owner = string.IsNullOrWhiteSpace(dto.Owner) ? null : dto.Owner.Trim();
             milestone.PlannedDate = dto.PlannedDate.Date;
             milestone.Status = dto.Status;
             milestone.ReferenceNo = dto.ReferenceNo;

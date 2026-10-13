@@ -197,3 +197,17 @@ td small { color: var(--ink-2); }
 .dash-split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; max-width: 1280px; }
 .dash-split h3 { margin-top: 18px; }
 @media (max-width: 900px) { .dash-split { grid-template-columns: 1fr; } }
+
+/* Stages page */
+.header-actions { display: flex; gap: 10px; }
+.page-note { color: var(--ink-2); max-width: 70ch; margin: -8px 0 12px; }
+.stage-summary { color: var(--ink-2); margin: 0 0 10px; font-size: 13.5px; }
+.stage-table td { padding: 7px 12px; }
+.stage-table input { width: 100%; padding: 7px 9px; }
+.stage-table .st-days { width: 90px; }
+.stage-table .st-owner { min-width: 170px; }
+.stage-table .st-name { min-width: 280px; }
+.stage-table td.muted, .muted { color: var(--ink-2); white-space: nowrap; }
+.btn:disabled { opacity: .4; cursor: default; }
+.stage-actions { white-space: nowrap; }
+.stage-actions .btn { margin-right: 4px; }

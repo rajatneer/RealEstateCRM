@@ -26,6 +26,7 @@ namespace RealEstateCRM.Data
         public DbSet<CrmTask> CrmTasks => Set<CrmTask>();
         public DbSet<Brokerage> Brokerages => Set<Brokerage>();
         public DbSet<SiteVisit> SiteVisits => Set<SiteVisit>();
+        public DbSet<StageTemplate> StageTemplates => Set<StageTemplate>();
         public DbSet<Project> Projects => Set<Project>();
         public DbSet<ProjectMilestone> ProjectMilestones => Set<ProjectMilestone>();
         public DbSet<Company> Companies => Set<Company>();
@@ -103,6 +104,8 @@ namespace RealEstateCRM.Data
             modelBuilder.Entity<SiteVisit>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId && (CurrentIsOwner || e.AssignedUserId == CurrentUserId));
 
             modelBuilder.Entity<Lead>().HasIndex(e => e.AssignedUserId);
+            modelBuilder.Entity<StageTemplate>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
+            modelBuilder.Entity<StageTemplate>().HasIndex(e => e.CompanyId);
             modelBuilder.Entity<Project>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
             modelBuilder.Entity<ProjectMilestone>().HasQueryFilter(e => e.CompanyId == CurrentCompanyId);
 
