@@ -75,6 +75,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
         if (page === 'sitevisits') loadSiteVisits();
         if (page === 'projects') loadProjects();
         if (page === 'stages') loadStages();
+        if (page === 'people') loadPeoplePage();
     });
 });
 
@@ -154,7 +155,7 @@ async function loadProjectsDashboard() {
         const prog = document.getElementById('dash-project-progress');
         prog.innerHTML = projects.length === 0 ? '<p class="empty-state">No projects yet. Add one from the Projects page.</p>' :
             `<table><tbody>${projects.map(p => `<tr>
-                <td><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.city || p.location)}</small></td>
+                <td><strong>${escapeHtml(p.name)}</strong><br><small>${escapeHtml(p.location)}${p.projectManager ? ' &middot; ' + escapeHtml(p.projectManager) : ''}</small></td>
                 <td style="min-width:150px"><div class="progress"><span style="width:${p.progressPercent}%"></span></div><small>${p.completedMilestones} of ${p.totalMilestones} steps${p.overdueMilestones ? ` &middot; <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</small></td>
                 <td><span class="${badgeClass(p.status)}">${spaced(p.status)}</span></td>
             </tr>`).join('')}</tbody></table>`;
@@ -1582,10 +1583,11 @@ function renderProjects(projects) {
     const c = document.getElementById('projects-list');
     if (projects.length === 0) { c.innerHTML = '<p class="empty-state">No projects yet. Add your first villa project!</p>'; return; }
     c.innerHTML = `<table>
-        <thead><tr><th>Project</th><th>Location</th><th>Villas</th><th>Status</th><th>Progress</th><th>Next step</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Project</th><th>Location</th><th>Project manager</th><th>Villas</th><th>Status</th><th>Progress</th><th>Next step</th><th>Actions</th></tr></thead>
         <tbody>${projects.map(p => `<tr>
             <td><strong>${escapeHtml(p.name)}</strong></td>
-            <td>${escapeHtml([p.location, p.city].filter(Boolean).join(', '))}</td>
+            <td>${escapeHtml(p.location)}</td>
+            <td>${escapeHtml(p.projectManager) || '<span class="muted">Not assigned</span>'}</td>
             <td>${p.totalVillas}</td>
             <td><span class="${badgeClass(p.status)}">${spaced(p.status)}</span></td>
             <td><div class="progress"><span style="width:${p.progressPercent}%"></span></div><small>${p.completedMilestones} of ${p.totalMilestones} steps${p.overdueMilestones ? ` &middot; <span class="text-danger">${p.overdueMilestones} overdue</span>` : ''}</small></td>
@@ -1607,24 +1609,23 @@ function projectFormHtml(p = null) {
         </div>
         <div class="form-group"><label>Location *</label><input name="location" required maxlength="300" value="${p ? escapeHtml(p.location) : ''}"></div>
         <div class="form-row">
-            <div class="form-group"><label>City</label><input name="city" maxlength="100" value="${p ? escapeHtml(p.city) : ''}"></div>
-            <div class="form-group"><label>State</label><input name="state" maxlength="50" value="${p ? escapeHtml(p.state) : ''}"></div>
+            <div class="form-group"><label>Project manager</label>${personSelectHtml('projectManager', p ? p.projectManager : '')}</div>
+            <div class="form-group"><label>Escalation owner</label>${personSelectHtml('escalationOwner', p ? p.escalationOwner : '')}</div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>Status</label><select name="status">${optionsHtml(PROJECT_STATUSES, p ? p.status : 'Planning')}</select></div>
             <div class="form-group"><label>Start date</label><input name="startDate" type="date" value="${p ? dayInput(p.startDate) : ''}"></div>
             <div class="form-group"><label>Expected completion</label><input name="expectedCompletionDate" type="date" value="${p ? dayInput(p.expectedCompletionDate) : ''}"></div>
         </div>
         <div class="form-group"><label>Notes</label><textarea name="notes" maxlength="1000">${p ? escapeHtml(p.notes) : ''}</textarea></div>
-        ${p ? '' : '<div class="form-group"><label><input type="checkbox" name="addDefaults" checked> Add all stages from the Stages page (owner and deadlines are filled in; you can edit them later)</label></div>'}
+        ${p ? '' : '<div class="form-group"><label class="check-row"><input type="checkbox" name="addDefaults" checked> <span>Add all stages from the Stages page (owner and deadlines are filled in; you can edit them later)</span></label></div>'}
         <div class="form-actions"><button type="submit" class="btn btn-primary">Save</button></div>
     </form>`;
 }
 
-function showProjectForm() { openModal('New Project', projectFormHtml()); }
+async function showProjectForm() { await loadPeople(); openModal('New Project', projectFormHtml()); }
 
 async function editProject(id) {
-    try { openModal('Edit Project', projectFormHtml(await apiGet(`/projects/${id}`))); }
+    try { await loadPeople(); openModal('Edit Project', projectFormHtml(await apiGet(`/projects/${id}`))); }
     catch (err) { showToast('Failed to load project: ' + err.message, true); }
 }
 
@@ -1634,10 +1635,9 @@ async function saveProject(e, id) {
     const data = {
         name: f.name.value.trim(),
         location: f.location.value.trim(),
-        city: f.city.value.trim() || null,
-        state: f.state.value.trim() || null,
         totalVillas: parseInt(f.totalVillas.value) || 0,
-        status: f.status.value,
+        projectManager: f.projectManager.value || null,
+        escalationOwner: f.escalationOwner.value || null,
         startDate: dayToIso(f.startDate.value),
         expectedCompletionDate: dayToIso(f.expectedCompletionDate.value),
         notes: f.notes.value.trim() || null
@@ -1673,7 +1673,8 @@ async function openProject(id) {
                 </td>
             </tr>`).join('')}</tbody></table>`;
         openModal(p.name, `
-            <p>${escapeHtml([p.location, p.city, p.state].filter(Boolean).join(', '))} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
+            <p>${escapeHtml(p.location)} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
+            <p class="muted">Project manager: <strong>${escapeHtml(p.projectManager) || 'Not assigned'}</strong> &middot; Escalation owner: <strong>${escapeHtml(p.escalationOwner) || 'Not assigned'}</strong></p>
             <p>Progress: ${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)</p>
             <div class="form-group">
                 <label>Current step (project abhi kis step par hai)</label>
@@ -1801,7 +1802,7 @@ function ownerDatalist() {
 async function loadStages() {
     try {
         const stages = await apiGet('/stages');
-        window.__owners = Array.from(new Set(COMMON_OWNERS.concat(stages.map(s => s.owner).filter(Boolean))));
+        window.__owners = Array.from(new Set(COMMON_OWNERS.concat((window.__people || []).map(x => x.name), stages.map(s => s.owner).filter(Boolean))));
         renderStages(stages);
     } catch (err) { showToast('Failed to load stages: ' + err.message, true); }
 }
@@ -1903,5 +1904,76 @@ async function deleteStage(id) {
 
 async function seedStages() {
     try { await apiPost('/stages/seed-defaults', {}); showToast('Standard stages loaded'); loadStages(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+
+// ══════════════════════════════════════════
+// ── People (master list for Project manager / Escalation owner) ──
+// ══════════════════════════════════════════
+window.__people = [];
+
+async function loadPeople() {
+    try { window.__people = await apiGet('/people'); }
+    catch (err) { showToast('Failed to load people: ' + err.message, true); }
+}
+
+function personSelectHtml(name, selected) {
+    const names = window.__people.map(x => x.name);
+    if (selected && !names.includes(selected)) names.push(selected);
+    return `<select name="${name}" data-onchange="personSelectChanged(event)">
+        <option value="">Assign later</option>
+        ${names.map(n => `<option value="${escapeHtml(n)}" ${n === selected ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}
+        <option value="__new__">Add a new person...</option>
+    </select>
+    <small>Select a saved person or add a new name.</small>`;
+}
+
+async function personSelectChanged(ev) {
+    const sel = ev.target;
+    if (sel.value !== '__new__') return;
+    const name = (window.prompt('Name of the new person') || '').trim();
+    if (!name) { sel.value = ''; return; }
+    try {
+        const person = await apiPost('/people', { name });
+        await loadPeople();
+        // Add the new name to every person dropdown on the form, keeping each one's current choice.
+        document.querySelectorAll('#modal-body select[data-onchange="personSelectChanged(event)"]').forEach(s => {
+            const keep = s === sel ? person.name : s.value;
+            const opts = window.__people.map(x => x.name);
+            s.innerHTML = '<option value="">Assign later</option>' + opts.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') + '<option value="__new__">Add a new person...</option>';
+            s.value = keep;
+        });
+        showToast(`${person.name} added`);
+    } catch (err) { sel.value = ''; showToast('Error: ' + err.message, true); }
+}
+
+async function loadPeoplePage() {
+    await loadPeople();
+    const c = document.getElementById('people-list');
+    c.innerHTML = window.__people.length === 0 ? '<p class="empty-state">No people yet.</p>' :
+        `<table><thead><tr><th>Name</th><th></th></tr></thead><tbody>${window.__people.map(x => `<tr>
+            <td><strong>${escapeHtml(x.name)}</strong></td>
+            <td class="actions"><button class="btn btn-sm btn-danger" data-onclick="deletePerson(${x.id})">Delete</button></td>
+        </tr>`).join('')}</tbody></table>`;
+}
+
+function showPersonForm() {
+    openModal('Add person', `
+    <form data-onsubmit="saveNewPerson(event)">
+        <div class="form-group"><label>Name *</label><input name="name" required maxlength="100"></div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary">Add person</button></div>
+    </form>`);
+}
+
+async function saveNewPerson(e) {
+    e.preventDefault();
+    try { await apiPost('/people', { name: e.target.name.value.trim() }); showToast('Person added'); closeModal(); loadPeoplePage(); }
+    catch (err) { showToast('Error: ' + err.message, true); }
+}
+
+async function deletePerson(id) {
+    if (!confirm('Remove this person from the list? Projects already using the name keep it.')) return;
+    try { await apiDelete(`/people/${id}`); showToast('Person removed'); loadPeoplePage(); }
     catch (err) { showToast('Error: ' + err.message, true); }
 }

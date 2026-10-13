@@ -33,6 +33,12 @@ namespace RealEstateCRM.Models
         public DateTime? StartDate { get; set; }
         public DateTime? ExpectedCompletionDate { get; set; }
 
+        [MaxLength(100)]
+        public string? ProjectManager { get; set; }
+
+        [MaxLength(100)]
+        public string? EscalationOwner { get; set; }
+
         [MaxLength(1000)]
         public string? Notes { get; set; }
 

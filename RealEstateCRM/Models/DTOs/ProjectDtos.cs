@@ -26,6 +26,12 @@ namespace RealEstateCRM.Models.DTOs
         public DateTime? StartDate { get; set; }
         public DateTime? ExpectedCompletionDate { get; set; }
 
+        [StringLength(100)]
+        public string? ProjectManager { get; set; }
+
+        [StringLength(100)]
+        public string? EscalationOwner { get; set; }
+
         [StringLength(1000)]
         public string? Notes { get; set; }
 
@@ -97,6 +103,8 @@ namespace RealEstateCRM.Models.DTOs
         public ProjectStatus Status { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? ExpectedCompletionDate { get; set; }
+        public string? ProjectManager { get; set; }
+        public string? EscalationOwner { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
         public int TotalMilestones { get; set; }
@@ -134,6 +142,20 @@ namespace RealEstateCRM.Models.DTOs
             };
         }
 
+        /// <summary>Project status follows its stages: nothing started = Planning, permits under way = Approvals,
+        /// construction under way = UnderConstruction, everything done = Completed. A project put on hold by hand stays OnHold.</summary>
+        private static ProjectStatus DeriveStatus(Project p, List<MilestoneDto> ms)
+        {
+            if (p.Status == ProjectStatus.OnHold) return ProjectStatus.OnHold;
+            var active = ms.Where(m => m.Status != MilestoneStatus.Cancelled).ToList();
+            if (active.Count == 0) return ProjectStatus.Planning;
+            if (active.All(m => m.Status == MilestoneStatus.Completed)) return ProjectStatus.Completed;
+            bool Started(MilestoneDto m) => m.Status == MilestoneStatus.Completed || m.Status == MilestoneStatus.InProgress;
+            if (active.Any(m => m.Category == MilestoneCategory.Construction && Started(m))) return ProjectStatus.UnderConstruction;
+            if (active.Any(m => m.Category == MilestoneCategory.Approval && Started(m))) return ProjectStatus.Approvals;
+            return ProjectStatus.Planning;
+        }
+
         public static ProjectDto ToDto(this Project p, DateTime today)
         {
             var milestones = p.Milestones.OrderBy(m => m.PlannedDate).ThenBy(m => m.Sequence).ThenBy(m => m.Id).Select(m => m.ToDto(today)).ToList();
@@ -148,9 +170,11 @@ namespace RealEstateCRM.Models.DTOs
                 City = p.City,
                 State = p.State,
                 TotalVillas = p.TotalVillas,
-                Status = p.Status,
+                Status = DeriveStatus(p, milestones),
                 StartDate = p.StartDate,
                 ExpectedCompletionDate = p.ExpectedCompletionDate,
+                ProjectManager = p.ProjectManager,
+                EscalationOwner = p.EscalationOwner,
                 Notes = p.Notes,
                 CreatedAt = p.CreatedAt,
                 TotalMilestones = counted.Count,

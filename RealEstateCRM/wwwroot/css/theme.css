@@ -211,3 +211,7 @@ td small { color: var(--ink-2); }
 .btn:disabled { opacity: .4; cursor: default; }
 .stage-actions { white-space: nowrap; }
 .stage-actions .btn { margin-right: 4px; }
+
+.form-group label.check-row { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; }
+.check-row input { margin-top: 3px; flex: none; width: auto; }
+.nav-group:nth-of-type(2) { color: #d2b36b; }

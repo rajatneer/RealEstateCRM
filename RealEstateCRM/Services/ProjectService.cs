@@ -59,6 +59,8 @@ namespace RealEstateCRM.Services
                 Status = dto.Status,
                 StartDate = dto.StartDate,
                 ExpectedCompletionDate = dto.ExpectedCompletionDate,
+                ProjectManager = Clean(dto.ProjectManager),
+                EscalationOwner = Clean(dto.EscalationOwner),
                 Notes = dto.Notes,
                 CreatedAt = DateTime.UtcNow
             };
@@ -103,6 +105,8 @@ namespace RealEstateCRM.Services
             project.Status = dto.Status;
             project.StartDate = dto.StartDate;
             project.ExpectedCompletionDate = dto.ExpectedCompletionDate;
+            project.ProjectManager = Clean(dto.ProjectManager);
+            project.EscalationOwner = Clean(dto.EscalationOwner);
             project.Notes = dto.Notes;
 
             await _context.SaveChangesAsync();
@@ -180,6 +184,8 @@ namespace RealEstateCRM.Services
                 .OrderBy(m => m.PlannedDate)
                 .ToPagedListAsync(_paging);
         }
+
+        private static string? Clean(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
 
         private static void Apply(ProjectMilestone milestone, MilestoneCreateDto dto)
         {
