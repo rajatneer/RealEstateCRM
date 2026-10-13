@@ -1677,6 +1677,15 @@ async function openProject(id) {
             <p>${escapeHtml(p.location)} &middot; ${p.totalVillas} villas &middot; <span class="${badgeClass(p.status)}">${spaced(p.status)}</span></p>
             <p class="muted">Project manager: <strong>${escapeHtml(p.projectManager) || 'Not assigned'}</strong> &middot; Escalation owner: <strong>${escapeHtml(p.escalationOwner) || 'Not assigned'}</strong></p>
             <p>Progress: ${p.completedMilestones}/${p.totalMilestones} (${p.progressPercent}%)</p>
+            <h3>Documents</h3>
+            <form class="doc-upload" data-onsubmit="uploadProjectDoc(event, ${p.id})">
+                <input type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt">
+                <input type="text" name="stage" list="doc-stage-options" maxlength="200" placeholder="Stage (type to search, optional)" autocomplete="off"><datalist id="doc-stage-options">${p.milestones.map(m => `<option value="${escapeHtml(m.title)}"></option>`).join('')}</datalist>
+                <input type="text" name="note" maxlength="500" placeholder="Note (optional)">
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+            <small class="muted">PDF, photos, Word, Excel, CSV or text. Up to 10 MB per file.</small>
+            <div id="project-docs" class="table-container"><p class="empty-state">Loading...</p></div>
             <div class="form-group">
                 <label>Current step (project abhi kis step par hai)</label>
                 <select id="current-step-select">
@@ -1689,16 +1698,7 @@ async function openProject(id) {
                 <button class="btn btn-primary" data-onclick="saveCurrentStep(${p.id})">Save</button>
                 <button class="btn" data-onclick="showMilestoneForm(${p.id})">+ Add step</button>
             </div>
-            <div class="table-container">${rows}</div>
-            <h3>Documents</h3>
-            <form class="doc-upload" data-onsubmit="uploadProjectDoc(event, ${p.id})">
-                <input type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt">
-                <select name="milestoneId"><option value="">Whole project</option>${p.milestones.map(m => `<option value="${m.id}">${escapeHtml(m.title)}</option>`).join('')}</select>
-                <input type="text" name="note" maxlength="500" placeholder="Note (optional)">
-                <button type="submit" class="btn btn-primary">Upload</button>
-            </form>
-            <small class="muted">PDF, photos, Word, Excel, CSV or text. Up to 10 MB per file.</small>
-            <div id="project-docs" class="table-container"><p class="empty-state">Loading...</p></div>`, true);
+            <div class="table-container">${rows}</div>`, true);
         loadProjectDocs(p.id);
         window.__openProject = p;
     } catch (err) { showToast('Failed to load project: ' + err.message, true); }
@@ -2035,8 +2035,12 @@ async function uploadProjectDoc(e, projectId) {
     if (file.size > 10 * 1024 * 1024) { showToast('File is too large. The limit is 10 MB.', true); return; }
     const fd = new FormData();
     fd.append('file', file);
-    if (f.milestoneId.value) fd.append('milestoneId', f.milestoneId.value);
-    if (f.note.value.trim()) fd.append('note', f.note.value.trim());
+    const typed = f.stage.value.trim();
+    const stage = typed && (window.__openProject?.milestones || []).find(m => m.title.toLowerCase() === typed.toLowerCase());
+    let note = f.note.value.trim();
+    if (stage) fd.append('milestoneId', stage.id);
+    else if (typed) note = note ? `${typed}: ${note}` : typed;   // free text that is not a stage name is kept as a label
+    if (note) fd.append('note', note);
     const btn = f.querySelector('button[type=submit]');
     btn.disabled = true; btn.textContent = 'Uploading...';
     try {
