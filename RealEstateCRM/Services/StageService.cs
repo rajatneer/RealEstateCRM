@@ -79,8 +79,13 @@ namespace RealEstateCRM.Services
 
         public StageService(CrmDbContext context) => _context = context;
 
-        public Task<List<StageTemplate>> GetAllAsync() =>
-            _context.StageTemplates.OrderBy(s => s.Sequence).ThenBy(s => s.Id).ToListAsync();
+        public async Task<List<StageTemplate>> GetAllAsync()
+        {
+            // First visit: a company with no stages gets the standard list so the page is never empty.
+            if (!await _context.StageTemplates.AnyAsync())
+                await SeedDefaultsAsync();
+            return await _context.StageTemplates.OrderBy(s => s.Sequence).ThenBy(s => s.Id).ToListAsync();
+        }
 
         public async Task<StageTemplate> CreateAsync(StageSaveDto dto)
         {
