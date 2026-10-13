@@ -42,10 +42,13 @@ namespace RealEstateCRM.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
-            var company = await _context.Companies.FirstOrDefaultAsync(c => c.Code == dto.CompanyCode);
+            // Company code and username are not case sensitive.
+            var codeKey = (dto.CompanyCode ?? string.Empty).Trim().ToLower();
+            var nameKey = (dto.Username ?? string.Empty).Trim().ToLower();
+            var company = await _context.Companies.FirstOrDefaultAsync(c => c.Code.ToLower() == codeKey);
             var user = company == null
                 ? null
-                : await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.Username == dto.Username && u.IsActive);
+                : await _context.Users.FirstOrDefaultAsync(u => u.CompanyId == company.Id && u.Username.ToLower() == nameKey && u.IsActive);
 
             if (company == null || user == null)
             {
@@ -139,7 +142,8 @@ namespace RealEstateCRM.Controllers
                 throw new BadRequestException($"Role must be one of: {string.Join(", ", Roles.All)}.");
 
             var companyId = _tenant.CompanyId;
-            if (await _context.Users.AnyAsync(u => u.CompanyId == companyId && u.Username == dto.Username))
+            var newNameKey = (dto.Username ?? string.Empty).Trim().ToLower();
+            if (await _context.Users.AnyAsync(u => u.CompanyId == companyId && u.Username.ToLower() == newNameKey))
                 throw new ConflictException("That username is already taken.");
 
             var user = new User

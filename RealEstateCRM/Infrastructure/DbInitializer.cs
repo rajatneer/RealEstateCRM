@@ -166,7 +166,7 @@ namespace RealEstateCRM.Infrastructure
                 return;
             }
 
-            var company = await db.Companies.FirstOrDefaultAsync(c => c.Code == code);
+            var company = await db.Companies.FirstOrDefaultAsync(c => c.Code.ToLower() == code.ToLower());
             if (company == null)
             {
                 company = new Company { Code = code, Name = string.IsNullOrWhiteSpace(companyName) ? code : companyName };
@@ -174,7 +174,7 @@ namespace RealEstateCRM.Infrastructure
                 await db.SaveChangesAsync();
             }
 
-            var exists = await db.Users.AnyAsync(u => u.CompanyId == company.Id && u.Username == username);
+            var exists = await db.Users.AnyAsync(u => u.CompanyId == company.Id && u.Username.ToLower() == username.ToLower());
             if (!exists)
             {
                 db.Users.Add(new User
