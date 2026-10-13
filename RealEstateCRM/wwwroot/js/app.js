@@ -1556,12 +1556,7 @@ function dueText(m) {
 
 async function loadProjects() {
     try {
-        const [projects, upcoming] = await Promise.all([
-            apiGet('/projects'),
-            apiGet('/projects/milestones/upcoming?days=30')
-        ]);
-        renderDeadlines(upcoming);
-        renderProjects(projects);
+        renderProjects(await apiGet('/projects'));
     } catch (err) { showToast('Failed to load projects: ' + err.message, true); }
 }
 
