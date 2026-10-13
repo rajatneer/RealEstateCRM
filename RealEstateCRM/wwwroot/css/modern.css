@@ -115,3 +115,40 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--sea)
 .content { padding: 32px 32px 64px; }
 .pipeline-column.stage-negotiation { border-top-color: #6b6a9e; }
 .pipeline-column.stage-won { border-top-color: #4d8a68; }
+
+/* ── Softer, lower-glare surfaces ── */
+:root { --stone: #e7eaed; --surface: #f6f7f8; --card-bg: #f6f7f8; --line: #d5dade; --ink: #26313a; --ink-2: #5d6a75; }
+body { background: var(--stone); color: var(--ink); }
+.sidebar { background: #25323c; border-right: 0; }
+.logo h2 { color: #eef2f5; }
+.logo small { color: #93a4b1; }
+.logo .logo-mark rect { fill: #5b93ae; }
+.nav-group, .nav-group:nth-of-type(2) { color: #7f909d; }
+.nav-link { color: #c3cdd5; }
+.nav-link svg { opacity: .8; }
+.nav-link:hover { background: #2f3f4b; color: #fff; }
+.nav-link.active { background: #3a4f5e; color: #fff; }
+.nav-link.active svg { color: #8cc0d8; }
+.btn-logout { background: transparent; color: #c3cdd5; border-color: #3d4e5a; }
+.btn-logout:hover { background: #2f3f4b; color: #fff; }
+.stat-card, .table-container, .calc-card, .pipeline-card, .modal, .recent-section .table-container { background: var(--surface); border-color: var(--line); }
+.stat-card, .table-container, .calc-card, .pipeline-card { box-shadow: none; }
+th { background: #eceff1; }
+tbody tr:hover { background: #eaeff2; }
+td { border-bottom-color: #e3e7ea; }
+input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"], input[type="email"], input[type="tel"], input[type="password"], select, textarea { background: #fafafa; border-color: #cdd4d9; }
+.btn { background: #f6f7f8; border-color: #cdd4d9; }
+.btn:hover { background: #eceff1; }
+.btn-primary { background: var(--sea); border-color: var(--sea); }
+.btn-primary:hover { background: var(--sea-dark); border-color: var(--sea-dark); }
+.btn-logout { background: transparent; }
+.modal-overlay { background: rgba(31,41,51,.5); backdrop-filter: none; }
+.info-note { background: #dde8ee; border-color: #c6d6df; }
+.pipeline-column { background: #dde2e6; }
+.progress { background: #d5dce0; }
+.login-container { background: var(--stone); }
+.login-form { background: transparent; }
+.login-brand { background: #25323c; }
+.login-brand .logo-mark path { stroke: #25323c; }
+.page-note, .muted, .empty-state { color: var(--ink-2); }
+@media (max-width: 900px) { .sidebar { border-bottom: 0; } }
